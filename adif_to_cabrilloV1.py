@@ -61,7 +61,10 @@ class HojaExcelApp:
 		columns = ("FREQ_RX", "MODE", "QSO_DATE", "TIME_ON",
 				   "STATION_CALLSIGN", "DATA1", "CALL", "DATA2")
 		if mode == 1:
-			columns =("CONTEST","C.OPERATOR","C.BAND","C.POWER","C.MODE","LOCATOR")
+			
+			# Creamos la lista solo con las claves antes de ":"
+			#columns = [linea.split(":", 1)[0].strip() for linea in HEADER.strip().splitlines() if ":" in linea]
+			columns =("CONTEST","C.OPERATOR","C.BAND","C.POWER","C.MODE","LOCATOR","SCORE","NAME")
 			self.tree = ttk.Treeview(self.parent, columns=columns, show='headings',height=1)
 		elif mode==0:	
 			self.tree = ttk.Treeview(self.parent, columns=columns, show='headings')
