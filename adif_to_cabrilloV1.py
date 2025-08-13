@@ -108,7 +108,7 @@ class HojaExcelApp:
 		datos = []
 		for item_id in self.tree.get_children():  # IDs de cada fila
 			fila = self.tree.item(item_id, "values")  # tupla con los valores de las columnas
-			print(fila)  # mostrar en consola
+			#print(fila)  # mostrar en consola debug
 			datos.append(fila)
 		return datos
 
@@ -117,6 +117,7 @@ class Header:
 		self.crea_diccionario()
 		
 	def crea_diccionario(self):
+		""" Inicializa el direccionario con keys HEADER cabrillo"""
 		self.header_dict = {}
 
 		for linea in HEADER.strip().splitlines():
@@ -125,9 +126,10 @@ class Header:
 				self.header_dict[clave.strip()] = valor.strip()	
 					
 	def lee_diccionario(self):
+		""" Lee el diccionario key , value"""
 		res=""
 		for key,value in self.header_dict.items():
-			res +=key +' '+value
+			res += key +': '+value+'\n'
 		return res
 			
 	def set_value(self,key,value):
@@ -147,8 +149,8 @@ class InterfaceGraphique(tk.Tk):
 		self.hoja = HojaExcelApp(self.FrameSup, "")
 		
 		#Crea Header
-		self.cabecera= Header()
-		self.cabecera.lee_diccionario()
+		self.cabecera= Header() #instancia Header
+		#self.cabecera.lee_diccionario()
 
 	def creeGui(self):
 		# Frames para colocar diferentes partes
@@ -208,10 +210,10 @@ class InterfaceGraphique(tk.Tk):
 		adif_records_raw = adif_data.split("<EOR>")
 		datos_tabla = []
 
-	
 		for record in adif_records_raw:
 			if "<CALL:" in record:
 				adif = self.parse_adif_record(record)
+				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
 				# Añadimos columnas a la hoja excel
 				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
 				#line = self.adif_to_cabrillo_line(adif)
@@ -220,6 +222,11 @@ class InterfaceGraphique(tk.Tk):
 		# Cargamos nuevos datos en la tabla
 		self.hoja.cargar_datos(datos_tabla)
 
+
+	def get_field(name,record):
+		match = re.search(fr"<{name}:(\d+)>(.*?)($|<)", record)
+		return match.group(2).strip() if match else ""
+		
 	def parse_adif_record(self, record):
 		"""Recupera datos del ADIF klog crea  KEYs  para cabrillo
 		<CALL:6>IU7QCK <QSO_DATE:8>20250809 <TIME_ON:6>080500 <FREQ:6>14.227 <BAND:3>20M <FREQ_RX:6>14.227 <BAND_RX:3>20M <MODE:3>SSB <MY_GRIDSQUARE:8>JN33JU07 <STATION_CALLSIGN:5>F4LEC <CQZ:2>15 <ITUZ:2>28 <DXCC:3>248 <CONT:2>EU <CONTACTED_OP:0> <EQ_CALL:0> <EQSL_QSLSDATE:8>20250809 <EQSL_QSL_SENT:1>Q <LOTW_QSLSDATE:8>20250809 <LOTW_QSL_SENT:1>Q <CLUBLOG_QSO_UPLOAD_DATE:8>20250809 <CLUBLOG_QSO_UPLOAD_STATUS:1>M <OPERATOR:0> <OWNER_CALLSIGN:0> <RST_SENT:2>59 <RST_RCVD:2>59 <TX_PWR:2>50 <EOR>"""
@@ -255,18 +262,21 @@ class InterfaceGraphique(tk.Tk):
 	def tabla_to_cabrillo(self):
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
 		lista= self.hoja.leer_tabla () #Lista de tuplas
-		#res=HEADER
-		res=""
+		
+		self.set_header() #configura el HEADER
+		res=self.cabecera.lee_diccionario()#Lee HEADER cabrillo
 		for qso in lista:#Lineas QSOs
-			#valores = self.tree.item(item_id, "values")    # obtenemos los valores de esa fila
-			print(qso) # lista de tuplas 
+			#print(qso) # tupla QSO
 			res +="QSO: "
-			for data in qso: #recorre las tuplas
+			for data in qso: #recorre las tuplas, los QSOs
 				res += data + "\t"
 			res +='\n'
 		
 		return res
-
+		
+	def set_header(self):
+		""" configura HEADER cabrillo con Datos """
+		self.cabecera.set_value("CALLSIGN",self.station_callsign)
 		
     		
 if __name__ == "__main__":
