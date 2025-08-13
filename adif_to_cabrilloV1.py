@@ -112,6 +112,28 @@ class HojaExcelApp:
 			datos.append(fila)
 		return datos
 
+class Header:
+	def __init__(self):
+		self.crea_diccionario()
+		
+	def crea_diccionario(self):
+		self.header_dict = {}
+
+		for linea in HEADER.strip().splitlines():
+			if ":" in linea:  # aseguramos que la línea tiene separador
+				clave, valor = linea.split(":", 1)  # split solo en el primer ':'
+				self.header_dict[clave.strip()] = valor.strip()	
+					
+	def lee_diccionario(self):
+		res=""
+		for key,value in self.header_dict.items():
+			res +=key +' '+value
+		return res
+			
+	def set_value(self,key,value):
+		""" set key with value in dict"""
+		self.header_dict[key]=value
+			
 class InterfaceGraphique(tk.Tk):
 	def __init__(self):
 		super().__init__()
@@ -123,6 +145,10 @@ class InterfaceGraphique(tk.Tk):
 
 		# Crear la hoja excel en FrameSup
 		self.hoja = HojaExcelApp(self.FrameSup, "")
+		
+		#Crea Header
+		self.cabecera= Header()
+		self.cabecera.lee_diccionario()
 
 	def creeGui(self):
 		# Frames para colocar diferentes partes
@@ -229,14 +255,14 @@ class InterfaceGraphique(tk.Tk):
 	def tabla_to_cabrillo(self):
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
 		lista= self.hoja.leer_tabla () #Lista de tuplas
-		res=HEADER
-	
+		#res=HEADER
+		res=""
 		for qso in lista:#Lineas QSOs
 			#valores = self.tree.item(item_id, "values")    # obtenemos los valores de esa fila
-			#print(qso)                                 # tupla con los valores		
+			print(qso) # lista de tuplas 
 			res +="QSO: "
-			for data in qso:
-				res +=data+"\t"
+			for data in qso: #recorre las tuplas
+				res += data + "\t"
 			res +='\n'
 		
 		return res
