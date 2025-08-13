@@ -1,4 +1,16 @@
 #https://cqww.com/cabrillo.htm
+"""
+                              --------info sent------- -------info rcvd--------
+QSO: freq  mo date       time call          rst exch   call          rst exch   t
+QSO: ***** ** yyyy-mm-dd nnnn ************* nnn ****** ************* nnn ****** n
+QSO:  3799 PH 2000-11-26 0711 N6TW          59  03     JT1Z          59  23     0
+000000000111111111122222222223333333333444444444455555555556666666666777777777788
+123456789012345678901234567890123456789012345678901234567890123456789012345678901
+CW (morse)
+PH (phone, voz)
+RY (radioteletipo, RTTY)
+FM, AM, SSB, etc.
+"""
 
 import tkinter as tk #Gui
 from tkinter import ttk
@@ -40,33 +52,47 @@ OPERATORS:
 SOAPBOX:
 """
 class HojaExcelApp:
-	def __init__(self, parent, adif_records):
+	def __init__(self, parent, adif_records, mode=0):
 		self.parent = parent
 		self.adif_records = adif_records
-		self.crear_hoja_excel()
+		self.crear_hoja_excel(mode)
 
-	def crear_hoja_excel(self):
+	def crear_hoja_excel(self,mode=0):
 		columns = ("FREQ_RX", "MODE", "QSO_DATE", "TIME_ON",
 				   "STATION_CALLSIGN", "DATA1", "CALL", "DATA2")
-
-		self.tree = ttk.Treeview(self.parent, columns=columns, show='headings')
+		if mode == 1:
+			columns =("CONTEST","C.OPERATOR","C.BAND","C.POWER","C.MODE","LOCATOR")
+			self.tree = ttk.Treeview(self.parent, columns=columns, show='headings',height=1)
+		elif mode==0:	
+			self.tree = ttk.Treeview(self.parent, columns=columns, show='headings')
+			
 		for col in columns:
 			self.tree.heading(col, text=col)
 			self.tree.column(col, width=100)  # ajuste de ancho
 
-		# Aseguramos que cada fila tenga todas las columnas
-		for row in self.adif_records:
-			while len(row) < len(columns):
-				row.append("")
+		
+		#Mode 0 utiliza adif_records
+		if mode ==0:
+			# Aseguramos que cada fila tenga todas las columnas
+			for row in self.adif_records:
+				while len(row) < len(columns):
+					row.append("")
 
-		# Insertamos los datos
-		for row in self.adif_records:
-			self.tree.insert("", "end", values=row)
+			# Insertamos los datos
+			for row in self.adif_records:
+				self.tree.insert("", "end", values=row)
+		
 
+		
 		self.tree.pack(fill="both", expand=True)
 
 		# Doble clic para editar celda
 		self.tree.bind("<Double-1>", self.editar_celda)
+		
+		if mode == 1:
+			# Lista con una fila vacía (tantos "" como columnas)
+			fila_vacia = ["" for _ in columns]
+			self.cargar_datos([fila_vacia])
 
 	def editar_celda(self, event):
 		"""Permite editar una celda al hacer doble clic sobre ella."""
@@ -144,14 +170,17 @@ class InterfaceGraphique(tk.Tk):
 		# self.geometry("1000x500")
 
 		self.creeGui()
-
-		# Crear la hoja excel en FrameSup
-		self.hoja = HojaExcelApp(self.FrameSup, "")
 		
 		#Crea Header
 		self.cabecera= Header() #instancia Header
-		#self.cabecera.lee_diccionario()
+		
+		#def __init__(self, parent, adif_records, mode=0):
+		# Crear la hoja excel en FrameSup HEADER cabrillo
+		self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
 
+		# Crear la hoja excel en FrameMed QSOs
+		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)
+		
 	def creeGui(self):
 		# Frames para colocar diferentes partes
 		self.FrameSup = tk.Frame(self, borderwidth=2)
@@ -220,7 +249,7 @@ class InterfaceGraphique(tk.Tk):
 				#print(line)
 		
 		# Cargamos nuevos datos en la tabla
-		self.hoja.cargar_datos(datos_tabla)
+		self.hoja_qso.cargar_datos(datos_tabla)
 
 
 	def get_field(name,record):
@@ -261,7 +290,7 @@ class InterfaceGraphique(tk.Tk):
 
 	def tabla_to_cabrillo(self):
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-		lista= self.hoja.leer_tabla () #Lista de tuplas
+		lista= self.hoja_qso.leer_tabla () #Lista de tuplas
 		
 		self.set_header() #configura el HEADER
 		res=self.cabecera.lee_diccionario()#Lee HEADER cabrillo
@@ -278,7 +307,6 @@ class InterfaceGraphique(tk.Tk):
 		""" configura HEADER cabrillo con Datos """
 		self.cabecera.set_value("CALLSIGN",self.station_callsign)
 		
-    		
 if __name__ == "__main__":
     print("soft version ", VERSION_SOFT)
     app = InterfaceGraphique()
