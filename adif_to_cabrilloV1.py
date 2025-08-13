@@ -45,33 +45,7 @@ class HojaExcelApp:
 	def on_select(self, event):
 		selected = self.tree.focus()
 		if selected:
-			"""
-			values = self.tree.item(selected)['values']
-			
-			self.FREQ_RX.delete(0, END)
-			self.FREQ_RX.insert(0, values[0])
-			
-			self.MODE.delete(0, END)
-			self.MODE.insert(0, values[1])
-			
-			self.QSO_DATE.delete(0, END)
-			self.QSO_DATE.insert(0, values[2])
-			
-			self.TIME_ON.delete(0, END)
-			self.TIME_ON.insert(0, values[3])
-					
-			self.STATION_CALLSIGN.delete(0, END)
-			self.STATION_CALLSIGN.insert(0, values[4])	
-			
-			self.DATA1.delete(0, END)
-			self.DATA1.insert(0, values[5])
-			
-			self.CALL.delete(0, END)
-			self.CALL.insert(0, values[6])			
-					
-			self.DATA2.delete(0, END)
-			self.DATA2.insert(0, values[7])	
-			"""         
+			values = self.tree.item(selected, "values")
 			campos = [self.FREQ_RX, self.MODE, self.QSO_DATE, self.TIME_ON,
 					  self.STATION_CALLSIGN, self.DATA1, self.CALL, self.DATA2]
 
