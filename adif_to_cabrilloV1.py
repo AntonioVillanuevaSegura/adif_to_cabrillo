@@ -215,8 +215,11 @@ class AdifCabrillo:
 		#lista= self.hoja_excel_app.hoja_qso.leer_tabla () #Lista de tuplas
 		lista= self.hoja_excel_app.leer_tabla () #Lista de tuplas
 		
-		self.set_header() #configura el HEADER
+		#Configura el Header
+		#self.set_header() #configura el HEADER
+		
 		res=self.header.lee_diccionario()#Lee HEADER cabrillo
+		
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO
 			res +="QSO: "
@@ -226,10 +229,31 @@ class AdifCabrillo:
 		
 		return res
 		
-	def set_header(self):
-		""" configura HEADER cabrillo con Datos """
-		self.header.set_value("CALLSIGN",self.station_callsign)
-	
+	def set_header(self,header_dict):
+		""" recupera un diccionario con los valores del header CABRILLO """
+		self.header.set_value("CONTEST",header_dict ["CONTEST"] )		
+		self.header.set_value("CALLSIGN",header_dict ["CALLSIGN"] )
+		self.header.set_value("LOCATION",header_dict ["LOCATION"] )
+		self.header.set_value("CATEGORY-OPERATOR",header_dict ["CATEGORY-OPERATOR"] )
+		self.header.set_value("CATEGORY-ASSISTED",header_dict ["CATEGORY-ASSISTED"] )
+		self.header.set_value("CATEGORY-BAND",header_dict ["CATEGORY-BAND"] )	
+		self.header.set_value("CATEGORY-POWER",header_dict ["CATEGORY-POWER"] )
+		self.header.set_value("CATEGORY-MODE",header_dict ["CATEGORY-MODE"] )
+		self.header.set_value("CATEGORY-TRANSMITTER",header_dict ["CATEGORY-TRANSMITTER"] )
+		self.header.set_value("CATEGORY-OVERLAY",header_dict ["CATEGORY-OVERLAY"] )	
+		self.header.set_value("GRID-LOCATOR",header_dict ["GRID-LOCATOR"] )
+		self.header.set_value("CLAIMED-SCORE",header_dict ["CLAIMED-SCORE"] )
+		self.header.set_value("CLUB",header_dict ["CLUB"] )
+		self.header.set_value("NAME",header_dict ["NAME"] )	
+		self.header.set_value("ADDRESS",header_dict ["ADDRESS"] )
+		self.header.set_value("ADDRESS-CITY",header_dict ["ADDRESS-CITY"] )
+		self.header.set_value("ADDRESS-STATE-PROVINCE",header_dict ["ADDRESS-STATE-PROVINCE"] )
+		self.header.set_value("ADDRESS-POSTALCODE",header_dict ["ADDRESS-POSTALCODE"] )	
+		self.header.set_value("ADDRESS-COUNTRY",header_dict ["ADDRESS-COUNTRY"] )
+		self.header.set_value("OPERATORS",header_dict ["OPERATORS"] )
+		self.header.set_value("SOAPBOX",header_dict ["SOAPBOX"] )
+															
+
 	def carga_adif(self):
 		adif_records_raw = self.adif_data.split("<EOR>")
 		datos_tabla = [] #Crea una lista 
@@ -246,39 +270,45 @@ class AdifCabrillo:
 		# Cargamos nuevos datos en la tabla
 		#self.hoja_qso.cargar_datos(datos_tabla)	
 		return datos_tabla #devuelve una lista para cargar en la hoja excel
-		
-	def get_callsign(self):
-		""" Recupera el indicativo de la estacion , datos del adif """
-		return self.station_callsign
-					
+
+			
 class InterfaceGraphique(tk.Tk):
 	def __init__(self):
 		super().__init__()
 		self.title('Adif to Cabrillo by F4LEC')
 		self.resizable(False, False)
 		# self.geometry("1000x500")
-
+		
+		#Declara Variables HEAD cabrillo
+		self.variablesCabrillo()
+		
 		self.creeGui()
 		
 		#instancia clase header Header
 		self.cabecera= Header() 
 		
-		# Crear la hoja excel en FrameSup HEADER cabrillo
-		self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
+		# Crear la hoja excel en FrameSup HEADER CABRILLO
+		#self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
 
 		# Crear la hoja excel en FrameMed QSOs
-		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)
+		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)		
+		
+	def mostrar_config(self):
+		if self.FrameSup.winfo_ismapped():
+			self.FrameSup.grid_remove()
+		else:
+			self.FrameSup.grid()
 		
 	def creeGui(self):
 		# Frames para colocar diferentes partes
 		self.FrameSup = tk.Frame(self, borderwidth=2)
-		self.FrameSup.pack()
+		self.FrameSup.grid(row=0, column=0, sticky="nsew")
 
 		self.FrameMed = tk.Frame(self, borderwidth=2)
-		self.FrameMed.pack()
+		self.FrameMed.grid(row=1, column=0, sticky="nsew")
 
 		self.FrameButtons = tk.Frame(self, borderwidth=2)
-		self.FrameButtons.pack()
+		self.FrameButtons.grid(row=2, column=0, sticky="ew")
 
 		# Botón para abrir archivo ADIF
 		self.ReadFileButton = tk.Button(self.FrameButtons, text="Open ADIF", bg="red",
@@ -289,8 +319,157 @@ class InterfaceGraphique(tk.Tk):
 		self.WriteButton = tk.Button(self.FrameButtons, text="Write Cabrillo", bg="green",
 										command=self.WriteFile)
 		self.WriteButton.grid(row=0, column=3)	
+		
+		#Boton ocultar configuracion
+		self.boton_mostrar = tk.Button(self.FrameButtons, text="Config",bg="Yellow" ,
+										command = self.mostrar_config)
+										
+		self.boton_mostrar.grid(row=0, column=4)
+		
+		self.headerCabrillo()		
+	
+	def variablesCabrillo(self):
+		""" variables tk utilizadas en el HEAD cabrillo"""
+		#Variables HEAD cabrillo
+		self.contest_var = tk.StringVar()		
+		self.callsign_var = tk.StringVar()
+		self.location_var = tk.StringVar()
+		self.category_operator_var = tk.StringVar()
+		self.category_assisted_var=tk.StringVar()
+		self.category_band_var = tk.StringVar()
+		self.category_power_var = tk.StringVar()
+		self.category_mode_var = tk.StringVar()	
+		self.category_transmiter_var = tk.StringVar()
+		self.category_overlay_var =tk.StringVar()
+		self.grid_locator_var=tk.StringVar()			
+		self.claimed_score_var = tk.StringVar()		
+		self.club_var = tk.StringVar()
+		self.name_var = tk.StringVar()
+		self.address_var = tk.StringVar()
+		self.address_city_var = tk.StringVar()
+		self.address_state_var = tk.StringVar()
+		self.address_postalcode_var = tk.StringVar()
+		self.address_country_var = tk.StringVar()
+		self.operators_var = tk.StringVar()
+		self.soapbox_var = tk.StringVar()		
+	def creaDiccionarioHeader (self):
+		""" Crea un diccionario  para pasar a otra clase """
+		header_cabrillo_dict= dict()
+		header_cabrillo_dict['CONTEST']=self.contest_var.get()		
+		header_cabrillo_dict['CALLSIGN']=self.callsign_var.get()
+		header_cabrillo_dict['LOCATION']=self.location_var.get()
+		header_cabrillo_dict['CATEGORY-OPERATOR']=self.category_operator_var.get()
+		header_cabrillo_dict['CATEGORY-ASSISTED']=self.category_assisted_var.get()
+		header_cabrillo_dict['CATEGORY-BAND']=self.category_band_var.get()
+		header_cabrillo_dict['CATEGORY-POWER']=self.category_power_var.get()
+		header_cabrillo_dict['CATEGORY-MODE']=self.category_mode_var.get()
+		header_cabrillo_dict['CATEGORY-TRANSMITTER']=self.category_transmiter_var.get()
+		header_cabrillo_dict['CATEGORY-OVERLAY']=self.category_overlay_var.get()
+		header_cabrillo_dict['GRID-LOCATOR']=self.grid_locator_var.get()
+		header_cabrillo_dict['CLAIMED-SCORE']=self.claimed_score_var.get()
+		header_cabrillo_dict['CLUB']=self.club_var .get()
+		header_cabrillo_dict['NAME']=self.name_var.get()
+		header_cabrillo_dict['ADDRESS']=self.address_var.get()
+		header_cabrillo_dict['ADDRESS-CITY']=self.address_city_var.get()
+		header_cabrillo_dict['ADDRESS-STATE-PROVINCE']=self.address_state_var.get()
+		header_cabrillo_dict['ADDRESS-POSTALCODE']=self.address_postalcode_var.get()
+		header_cabrillo_dict['ADDRESS-COUNTRY']=self.address_country_var.get()
+		header_cabrillo_dict['OPERATORS']=self.operators_var.get()
+		header_cabrillo_dict['SOAPBOX']=self.soapbox_var.get()
+		return header_cabrillo_dict
+
+	def headerCabrillo (self):	
+		""" campos graficos HEAD cabrillo"""
+		# Opciones categorias
+		operator_options = ['SINGLE-OP', 'MULTI-OP', 'CHECKLOG']
+		assisted_options = ['ASSISTED', 'NON-ASSISTED']
+		band_options = ['ALL','160M', '80M', '40M', '20M', '15M', '10M', '6M', '2M']
+		power_options = ['HIGH', 'LOW', 'QRP']
+		mode_options = ['SSB','CW','AM','FM']
+		transmitter_options = ['ONE', 'TWO', 'UNLIMITED']
+		overlay_options = ['CATEGORY-OVERLAY: CLASSIC', 'CATEGORY-OVERLAY: ROOKIE', 'CATEGORY-OVERLAY:  YOUTH']
+		certificate_options= ['YES','NO']
+
+		#  Frame superior self.FrameSup
+		
+		tk.Label(self.FrameSup, text="CONTEST:").grid(row=0, column=2, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameSup, textvariable=self.contest_var).grid(row=0, column=3, sticky="we", padx=5, pady=2)		
+		
+		tk.Label(self.FrameSup, text="CALLSIGN:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameSup, textvariable=self.callsign_var).grid(row=0, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(self.FrameSup, text="LOCATION:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameSup, textvariable=self.location_var).grid(row=1, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(self.FrameSup, text="CATEGORY-OPERATOR:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_operator_var, values=operator_options, state="readonly").grid(row=2, column=1, sticky="we", padx=5, pady=2)
+		self.category_operator_var.set(operator_options[0])
+
+		tk.Label(self.FrameSup, text="CATEGORY-ASSISTED:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_assisted_var, values=assisted_options, state="readonly").grid(row=3, column=1, sticky="we", padx=5, pady=2)
+		
+		tk.Label(self.FrameSup, text="CATEGORY-BAND:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_band_var, values=band_options, state="readonly").grid(row=4, column=1, sticky="we", padx=5, pady=2)
+		self.category_band_var.set(band_options[0])		
+		
+		tk.Label(self.FrameSup, text="CATEGORY-POWER:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_power_var, values=power_options, state="readonly").grid(row=5, column=1, sticky="we", padx=5, pady=2)
+		self.category_power_var.set(power_options[0])
 			
+		tk.Label(self.FrameSup, text="CATEGORY-MODE:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_mode_var, values=mode_options, state="readonly").grid(row=6, column=1, sticky="we", padx=5, pady=2)
+		self.category_mode_var.set(mode_options[0])	
+		
+		tk.Label(self.FrameSup, text="CATEGORY-TRANSMITER:").grid(row=7, column=0, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameSup, textvariable=self.category_transmiter_var, values=transmitter_options , state="readonly").grid(row=7, column=1, sticky="we", padx=5, pady=2)
+				
+		tk.Label(self.FrameSup, text="CLAIMED-SCORE:").grid(row=8, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameSup, textvariable=self.claimed_score_var).grid(row=8, column=1, sticky="we", padx=5, pady=2)
+	
+		tk.Label(self.FrameSup, text="CLUB:").grid(row=9, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameSup, textvariable=self.club_var).grid(row=9, column=1, sticky="we", padx=5, pady=2)
+		
+		# Dirección 
+		
+		addr_frame = tk.LabelFrame(self.FrameSup, text="Dirección")
+		addr_frame.grid(row=10, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+
+		tk.Label(addr_frame, text="NAME:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.name_var).grid(row=0, column=1, sticky="we", padx=5, pady=2)
+	
+		tk.Label(addr_frame, text="ADDRESS:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.address_var).grid(row=1, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(addr_frame, text="CITY:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.address_city_var).grid(row=2, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(addr_frame, text="STATE/PROVINCE:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.address_state_var).grid(row=3, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(addr_frame, text="POSTAL CODE:").grid(row=4, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.address_postalcode_var).grid(row=4, column=1, sticky="we", padx=5, pady=2)
+
+		tk.Label(addr_frame, text="COUNTRY:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.address_country_var).grid(row=5, column=1, sticky="we", padx=5, pady=2)
+		
+		tk.Label(addr_frame, text="GRID-LOCATOR:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
+		tk.Entry(addr_frame, textvariable=self.grid_locator_var).grid(row=6, column=1, sticky="we", padx=5, pady=2)		
+	
+		# SOAPBOX multilinea
+		tk.Label(self.FrameSup, text="SOAPBOX:").grid(row=11, column=0, sticky="ne", padx=5, pady=2)
+		self.soapbox_text = tk.Text(self.FrameSup, height=4, width=40)
+		self.soapbox_text.grid(row=11, column=1, sticky="we", padx=5, pady=2)
+		
+		self.columnconfigure(1, weight=1)
+		addr_frame.columnconfigure(1, weight=1)		
+		
 	def WriteFile(self):
+		#Enviar datos del header CABRILLO para pasar a clase AdifCabrillo
+		header_cabrillo_dict = self.creaDiccionarioHeader () 
+		
+		#Enviar datos diccionario HEADER a la instancia de clase
+		self.adif_cabrillo.set_header (header_cabrillo_dict) #
+		
 		# Abre la ventana para seleccionar ubicación y nombre del archivo a guardar
 		ruta_guardado = filedialog.asksaveasfilename(
 			title="Guardar archivo como",
@@ -301,7 +480,6 @@ class InterfaceGraphique(tk.Tk):
 		if ruta_guardado:
 			# contendio a escribir
 			contenido= self.adif_cabrillo.tabla_to_cabrillo () #
-			#contenido = "Este es el contenido que quiero guardar en el archivo."
 			
 			# Abrir el archivo en modo escritura y guardar el contenido
 			with open(ruta_guardado, "w", encoding="utf-8") as archivo:
@@ -330,11 +508,12 @@ class InterfaceGraphique(tk.Tk):
 		#lista con datos del QSO desde el Adif cargado	
 		datos_tabla = self.adif_cabrillo.carga_adif() 
 		
-		#Recupera el indicativo desde el Adif
-		self.station_callsign = self.adif_cabrillo.get_callsign()		
+		#Recupera el indicativo desde el Adif 
+		#self.station_callsign = self.adif_cabrillo.get_callsign()		
 		
 		#Crea Excel con estos datos ,  en el programa
 		self.hoja_qso.cargar_datos(datos_tabla)
+
 
 if __name__ == "__main__":
     print("soft version ", VERSION_SOFT)
