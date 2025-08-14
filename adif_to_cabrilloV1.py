@@ -270,7 +270,7 @@ class InterfaceGraphique(tk.Tk):
 			"CALL": get_field("CALL"),
 			#"QSO_DATE": get_field("QSO_DATE"),
 			"QSO_DATE": f"{get_field('QSO_DATE')[:4]}-{get_field('QSO_DATE')[4:6]}-{get_field('QSO_DATE')[6:8]}",
-			"TIME_ON": get_field("TIME_ON")[:6],
+			"TIME_ON": get_field("TIME_ON")[:4],
 			"FREQ": (get_field("FREQ") or "").replace('.', ''),
 			"MODE": get_field("MODE"),
 			"STATION_CALLSIGN": get_field("STATION_CALLSIGN"),
