@@ -52,6 +52,7 @@ OPERATORS:
 SOAPBOX:
 """
 class HojaExcelApp:
+	"""Crea las hojas excel para mostrar datos en la parte grafica """
 	def __init__(self, parent, adif_records, mode=0):
 		self.parent = parent
 		self.adif_records = adif_records
@@ -142,6 +143,7 @@ class HojaExcelApp:
 		return datos
 
 class Header:
+	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
 	def __init__(self):
 		self.crea_diccionario()
 		
@@ -164,97 +166,14 @@ class Header:
 	def set_value(self,key,value):
 		""" set key with value in dict"""
 		self.header_dict[key]=value
-			
-class InterfaceGraphique(tk.Tk):
-	def __init__(self):
-		super().__init__()
-		self.title('Adif to Cabrillo by F4LEC')
-		self.resizable(False, False)
-		# self.geometry("1000x500")
 
-		self.creeGui()
+class AdifCabrillo:
+	""" clase para gestion Adif y Cabrillo"""
+	def __init__(self,adif_data,hoja_excel_app):
+		self.header=Header()
+		self.adif_data=adif_data
+		self.hoja_excel_app=hoja_excel_app #instancia HojaExcelApp
 		
-		#Crea Header
-		self.cabecera= Header() #instancia Header
-		
-		#def __init__(self, parent, adif_records, mode=0):
-		# Crear la hoja excel en FrameSup HEADER cabrillo
-		self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
-
-		# Crear la hoja excel en FrameMed QSOs
-		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)
-		
-	def creeGui(self):
-		# Frames para colocar diferentes partes
-		self.FrameSup = tk.Frame(self, borderwidth=2)
-		self.FrameSup.pack()
-
-		self.FrameMed = tk.Frame(self, borderwidth=2)
-		self.FrameMed.pack()
-
-		self.FrameButtons = tk.Frame(self, borderwidth=2)
-		self.FrameButtons.pack()
-
-		# Botón para abrir archivo ADIF
-		self.ReadFileButton = tk.Button(self.FrameButtons, text="Open ADIF", bg="red",
-										command=self.OpenFile)
-		self.ReadFileButton.grid(row=0, column=2)
-		
-		# Botón para exportar cabrillo
-		self.WriteButton = tk.Button(self.FrameButtons, text="Write Cabrillo", bg="green",
-										command=self.WriteFile)
-		self.WriteButton.grid(row=0, column=3)	
-			
-	def WriteFile(self):
-		# Abre la ventana para seleccionar ubicación y nombre del archivo a guardar
-		ruta_guardado = filedialog.asksaveasfilename(
-			title="Guardar archivo como",
-			defaultextension=".log",  # extensión por defecto
-			filetypes=[("Archivos logs", "*.log"), ("Todos los archivos", "*.*")]
-		)
-		
-		if ruta_guardado:
-			# contendio a escribir
-			contenido= self.tabla_to_cabrillo () #
-			#contenido = "Este es el contenido que quiero guardar en el archivo."
-			
-			# Abrir el archivo en modo escritura y guardar el contenido
-			with open(ruta_guardado, "w", encoding="utf-8") as archivo:
-				archivo.write(contenido)
-			print(f"Archivo guardado en: {ruta_guardado}")
-		else:
-			print("Guardado cancelado")		
-
-	def OpenFile(self):
-		""" Carga un fichero Adif creado con KLOG  """
-		ruta_fichero = filedialog.askopenfilename(
-			title="Selecciona el archivo ADIF",
-			filetypes=[("Archivos ADIF", "*.adi *.adif"), ("Todos los archivos", "*.*")]
-		)
-
-		if not ruta_fichero:
-			print("No se ha seleccionado ningún archivo.")
-			return
-
-		with open(ruta_fichero, encoding='utf8') as f:
-			adif_data = f.read()
-
-		adif_records_raw = adif_data.split("<EOR>")
-		datos_tabla = []
-
-		for record in adif_records_raw:
-			if "<CALL:" in record:
-				adif = self.parse_adif_record(record)
-				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
-				# Añadimos columnas a la hoja excel
-				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
-				#line = self.adif_to_cabrillo_line(adif)
-				#print(line)
-		
-		# Cargamos nuevos datos en la tabla
-		self.hoja_qso.cargar_datos(datos_tabla)
-
-
 	def get_field(name,record):
 		match = re.search(fr"<{name}:(\d+)>(.*?)($|<)", record)
 		return match.group(2).strip() if match else ""
@@ -293,10 +212,11 @@ class InterfaceGraphique(tk.Tk):
 
 	def tabla_to_cabrillo(self):
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-		lista= self.hoja_qso.leer_tabla () #Lista de tuplas
+		#lista= self.hoja_excel_app.hoja_qso.leer_tabla () #Lista de tuplas
+		lista= self.hoja_excel_app.leer_tabla () #Lista de tuplas
 		
 		self.set_header() #configura el HEADER
-		res=self.cabecera.lee_diccionario()#Lee HEADER cabrillo
+		res=self.header.lee_diccionario()#Lee HEADER cabrillo
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO
 			res +="QSO: "
@@ -308,8 +228,114 @@ class InterfaceGraphique(tk.Tk):
 		
 	def set_header(self):
 		""" configura HEADER cabrillo con Datos """
-		self.cabecera.set_value("CALLSIGN",self.station_callsign)
+		self.header.set_value("CALLSIGN",self.station_callsign)
+	
+	def carga_adif(self):
+		adif_records_raw = self.adif_data.split("<EOR>")
+		datos_tabla = [] #Crea una lista 
+
+		for record in adif_records_raw:
+			if "<CALL:" in record:
+				adif = self.parse_adif_record(record)
+				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
+				# Añadimos columnas a la hoja excel
+				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
+				#line = self.adif_to_cabrillo_line(adif)
+				#print(line)
+
+		# Cargamos nuevos datos en la tabla
+		#self.hoja_qso.cargar_datos(datos_tabla)	
+		return datos_tabla #devuelve una lista para cargar en la hoja excel
 		
+	def get_callsign(self):
+		""" Recupera el indicativo de la estacion , datos del adif """
+		return self.station_callsign
+					
+class InterfaceGraphique(tk.Tk):
+	def __init__(self):
+		super().__init__()
+		self.title('Adif to Cabrillo by F4LEC')
+		self.resizable(False, False)
+		# self.geometry("1000x500")
+
+		self.creeGui()
+		
+		#instancia clase header Header
+		self.cabecera= Header() 
+		
+		# Crear la hoja excel en FrameSup HEADER cabrillo
+		self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
+
+		# Crear la hoja excel en FrameMed QSOs
+		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)
+		
+	def creeGui(self):
+		# Frames para colocar diferentes partes
+		self.FrameSup = tk.Frame(self, borderwidth=2)
+		self.FrameSup.pack()
+
+		self.FrameMed = tk.Frame(self, borderwidth=2)
+		self.FrameMed.pack()
+
+		self.FrameButtons = tk.Frame(self, borderwidth=2)
+		self.FrameButtons.pack()
+
+		# Botón para abrir archivo ADIF
+		self.ReadFileButton = tk.Button(self.FrameButtons, text="Open ADIF", bg="red",
+										command=self.OpenFile)
+		self.ReadFileButton.grid(row=0, column=2)
+		
+		# Botón para exportar cabrillo
+		self.WriteButton = tk.Button(self.FrameButtons, text="Write Cabrillo", bg="green",
+										command=self.WriteFile)
+		self.WriteButton.grid(row=0, column=3)	
+			
+	def WriteFile(self):
+		# Abre la ventana para seleccionar ubicación y nombre del archivo a guardar
+		ruta_guardado = filedialog.asksaveasfilename(
+			title="Guardar archivo como",
+			defaultextension=".log",  # extensión por defecto
+			filetypes=[("Archivos logs", "*.log"), ("Todos los archivos", "*.*")]
+		)
+		
+		if ruta_guardado:
+			# contendio a escribir
+			contenido= self.adif_cabrillo.tabla_to_cabrillo () #
+			#contenido = "Este es el contenido que quiero guardar en el archivo."
+			
+			# Abrir el archivo en modo escritura y guardar el contenido
+			with open(ruta_guardado, "w", encoding="utf-8") as archivo:
+				archivo.write(contenido)
+			print(f"Archivo guardado en: {ruta_guardado}")
+		else:
+			print("Guardado cancelado")		
+
+	def OpenFile(self):
+		""" Carga un fichero Adif creado con KLOG  """
+		ruta_fichero = filedialog.askopenfilename(
+			title="Selecciona el archivo ADIF",
+			filetypes=[("Archivos ADIF", "*.adi *.adif"), ("Todos los archivos", "*.*")]
+		)
+
+		if not ruta_fichero:
+			print("No se ha seleccionado ningún archivo.")
+			return
+
+		with open(ruta_fichero, encoding='utf8') as f:
+			adif_data = f.read()
+			
+		#Instancia clase AdifCabrillo
+		self.adif_cabrillo =AdifCabrillo(adif_data,self.hoja_qso)	
+			
+		#lista con datos del QSO desde el Adif cargado	
+		datos_tabla = self.adif_cabrillo.carga_adif() 
+		
+		#Recupera el indicativo desde el Adif
+		self.station_callsign = self.adif_cabrillo.get_callsign()		
+		
+		#Crea Excel con estos datos ,  en el programa
+		self.hoja_qso.cargar_datos(datos_tabla)
+
 if __name__ == "__main__":
     print("soft version ", VERSION_SOFT)
     app = InterfaceGraphique()
