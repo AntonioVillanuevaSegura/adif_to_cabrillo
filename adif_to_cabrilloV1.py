@@ -210,6 +210,20 @@ class AdifCabrillo:
 		hora = adif['TIME_ON'][:6]
 		return f"QSO: {freq:5} {modo:2} {fecha}  {hora} {adif['STATION_CALLSIGN']:12}   {adif ['RST_SENT']:4}     {adif['CALL']:12} {adif ['RST_RCVD']:4}"
 
+	def formatear_qso_tuple(self,qso_tuple):
+		""" formatea espacios segun norma cabrillo"""
+		freq, mode, date, time, call1, rst1, call2, rst2 = qso_tuple
+		return (
+			f"QSO: {freq:>5} "
+			f"{mode:<3} "
+			f"{date} "
+			f"{time:>4} "
+			f"{call1:<13} "
+			f"{rst1:<3} "
+			f"{call2:<13} "
+			f"{rst2:<3}"
+		)
+		
 	def tabla_to_cabrillo(self):
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
 		#lista= self.hoja_excel_app.hoja_qso.leer_tabla () #Lista de tuplas
@@ -222,9 +236,12 @@ class AdifCabrillo:
 		
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO
+			res +=self.formatear_qso_tuple(qso)
+			"""
 			res +="QSO: "
 			for data in qso: #recorre las tuplas, los QSOs
 				res += data + "\t"
+			"""
 			res +='\n'
 		
 		return res
@@ -252,7 +269,6 @@ class AdifCabrillo:
 		self.header.set_value("ADDRESS-COUNTRY",header_dict ["ADDRESS-COUNTRY"] )
 		self.header.set_value("OPERATORS",header_dict ["OPERATORS"] )
 		self.header.set_value("SOAPBOX",header_dict ["SOAPBOX"] )
-															
 
 	def carga_adif(self):
 		adif_records_raw = self.adif_data.split("<EOR>")
@@ -351,7 +367,8 @@ class InterfaceGraphique(tk.Tk):
 		self.address_postalcode_var = tk.StringVar()
 		self.address_country_var = tk.StringVar()
 		self.operators_var = tk.StringVar()
-		self.soapbox_var = tk.StringVar()		
+		self.soapbox_var = tk.Text()	
+			
 	def creaDiccionarioHeader (self):
 		""" Crea un diccionario  para pasar a otra clase """
 		header_cabrillo_dict= dict()
@@ -375,7 +392,7 @@ class InterfaceGraphique(tk.Tk):
 		header_cabrillo_dict['ADDRESS-POSTALCODE']=self.address_postalcode_var.get()
 		header_cabrillo_dict['ADDRESS-COUNTRY']=self.address_country_var.get()
 		header_cabrillo_dict['OPERATORS']=self.operators_var.get()
-		header_cabrillo_dict['SOAPBOX']=self.soapbox_var.get()
+		header_cabrillo_dict['SOAPBOX']=self.soapbox_text.get("1.0", "end").strip() [:68]
 		return header_cabrillo_dict
 
 	def headerCabrillo (self):	
@@ -459,6 +476,8 @@ class InterfaceGraphique(tk.Tk):
 		tk.Label(self.FrameSup, text="SOAPBOX:").grid(row=11, column=0, sticky="ne", padx=5, pady=2)
 		self.soapbox_text = tk.Text(self.FrameSup, height=4, width=40)
 		self.soapbox_text.grid(row=11, column=1, sticky="we", padx=5, pady=2)
+		
+		self.soapbox_var = self.soapbox_text.get("1.0", "end").strip()
 		
 		self.columnconfigure(1, weight=1)
 		addr_frame.columnconfigure(1, weight=1)		
