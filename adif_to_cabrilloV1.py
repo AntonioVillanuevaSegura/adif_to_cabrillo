@@ -197,20 +197,18 @@ class AdifCabrillo:
 			"RST_SENT": get_field("RST_SENT"),
 			"RST_RCVD": get_field("RST_RCVD"),            
 		}
-
+	"""
 	def adif_to_cabrillo_line(self, adif):
-		""" Crea linea cabrillo
-		QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-		QSO: 14242 PH 2025-08-09  0801 F4LEC          59  05     HA2YL         59  05     0
-		QSO: 14227 PH 2025-08-09  0805 F4LEC          59  05     IU7QCK        59  05     0
-		"""        
+		# Crea linea cabrillo
+		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
+     
 		freq = adif["FREQ"].replace('.', '')
 		modo = "PH" if adif["MODE"].upper() in ["SSB", "PH"] else adif["MODE"].upper()
 		fecha = f"{adif['QSO_DATE'][:4]}-{adif['QSO_DATE'][4:6]}-{adif['QSO_DATE'][6:8]}"
 		#hora = adif['TIME_ON'][:2] + adif['TIME_ON'][2:4]
 		hora = adif['TIME_ON'][:6]
 		return f"QSO: {freq:5} {modo:2} {fecha}  {hora} {adif['STATION_CALLSIGN']:12}   {adif ['RST_SENT']:4}     {adif['CALL']:12} {adif ['RST_RCVD']:4}"
-
+	"""
 	def formatear_qso_tuple(self,qso_tuple):
 		""" formatea espacios segun norma cabrillo"""
 		freq, mode, date, time, call1, rst1, call2, rst2 = qso_tuple
