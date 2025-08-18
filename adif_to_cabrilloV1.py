@@ -211,16 +211,16 @@ class AdifCabrillo:
 	"""
 	def formatear_qso_tuple(self,qso_tuple):
 		""" formatea espacios segun norma cabrillo"""
-		freq, mode, date, time, call1, rst1, call2, rst2 = qso_tuple
+		freq, mode, date, time, call1, data1, call2, data2 = qso_tuple
 		return (
 			f"QSO: {freq:>5} "
 			f"{mode:<3} "
 			f"{date} "
 			f"{time:>4} "
 			f"{call1:<13} "
-			f"{rst1:<3} "
+			f"{data1:<3} "
 			f"{call2:<13} "
-			f"{rst2:<3}"
+			f"{data2:<3}"
 		)
 		
 	def tabla_to_cabrillo(self):
