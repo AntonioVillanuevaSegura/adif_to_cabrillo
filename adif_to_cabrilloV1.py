@@ -60,7 +60,7 @@ class HojaExcelApp:
 
 	def crear_hoja_excel(self,mode=0):
 		columns = ("FREQ_RX", "MODE", "QSO_DATE", "TIME_ON",
-				   "STATION_CALLSIGN", "DATA1", "CALL", "DATA2")
+				   "STATION_CALLSIGN", "SERIAL_SENT", "CALL", "SERIAL_RCVD")
 		if mode == 1:
 			
 			# Creamos la lista solo con las claves antes de ":"
@@ -272,9 +272,15 @@ class AdifCabrillo:
 				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
 				# Añadimos columnas a la hoja excel
 				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
+				
+		#elimina duplicados
+		datos_tabla_sin_duplicados = list(map(list, set(map(tuple, datos_tabla))))
+		datos_tabla =datos_tabla_sin_duplicados
 		
 		# Ordena datos_tabla por QSO_DATE y TIME_ON 
 		datos_tabla.sort(key=lambda x: (x[2], x[3]))
+		
+
 			
 		return datos_tabla #devuelve una lista para cargar en la hoja excel
 
