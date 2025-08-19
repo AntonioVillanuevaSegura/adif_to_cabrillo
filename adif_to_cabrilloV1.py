@@ -60,11 +60,9 @@ class HojaExcelApp:
 
 	def crear_hoja_excel(self,mode=0):
 		columns = ("FREQ_RX", "MODE", "QSO_DATE", "TIME_ON",
-				   "STATION_CALLSIGN", "SERIAL_SENT", "CALL", "SERIAL_RCVD")
+				   "STATION_CALLSIGN", "SERIAL_SEND", "CALL", "SERIAL_RCVD")
 		if mode == 1:
-			
 			# Creamos la lista solo con las claves antes de ":"
-			#columns = [linea.split(":", 1)[0].strip() for linea in HEADER.strip().splitlines() if ":" in linea]
 			columns =("CONTEST","C.OPERATOR","C.BAND","C.POWER","C.MODE","LOCATOR","SCORE","NAME")
 			self.tree = ttk.Treeview(self.parent, columns=columns, show='headings',height=1)
 		elif mode==0:	
@@ -85,8 +83,6 @@ class HojaExcelApp:
 			# Insertamos los datos
 			for row in self.adif_records:
 				self.tree.insert("", "end", values=row)
-		
-
 		
 		self.tree.pack(fill="both", expand=True)
 
@@ -131,7 +127,8 @@ class HojaExcelApp:
 		for item in self.tree.get_children():
 			self.tree.delete(item)
 		for row in nuevos_datos:
-			self.tree.insert("", "end", values=row)
+			self.tree.insert("", "end", values=row)	
+		#self.modifica_columnas_serial() #TEST
 			
 	def leer_tabla (self):
 		"""Recorre todas las filas de la tabla y devuelve una lista con sus valores"""
@@ -142,6 +139,34 @@ class HojaExcelApp:
 			datos.append(fila)
 		return datos
 
+	def numero_filas(self):
+		""" numero de lineas filas del tablero """
+		# Obtener todos los ítems en la raíz (nivel superior)
+		items = self.tree.get_children()
+
+		# Cantidad de filas
+		return len(items)
+		
+	def modifica_columnas_serial (self,value="59"):
+		""" modifica el SERIAL_SEND de forma numerica """
+		for linea in range (0,self.numero_filas()):
+			valor_str = f"{linea:03d}"
+			self.modifica_columna(linea, "SERIAL_SEND", value +" "+ valor_str)
+
+	def modifica_columnas_modelo (self,value="59"):
+		""" modifica el SERIAL_SEND segun modelo """
+		for linea in range (0,self.numero_filas()):
+			self.modifica_columna(linea, "SERIAL_SEND", value )			
+		
+	def modifica_columna(self,linea, col, value):
+		""" modifica una linea de una columna"""
+		#ej :self.modifica_columna(0, "SEND_VALUE", "XXX")	
+		items = self.tree.get_children()
+		if items:
+			primer_item = items[linea]
+			self.tree.set(primer_item, col, value)		
+		
+	
 class Header:
 	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
 	def __init__(self):
@@ -284,7 +309,10 @@ class AdifCabrillo:
 			
 		return datos_tabla #devuelve una lista para cargar en la hoja excel
 
-			
+	def get_callsign (self):
+		""" return callsign """
+		return self.station_callsign
+		
 class InterfaceGraphique(tk.Tk):
 	def __init__(self):
 		super().__init__()
@@ -313,13 +341,16 @@ class InterfaceGraphique(tk.Tk):
 			self.FrameSup.grid()
 		
 	def creeGui(self):
-		# Frames para colocar diferentes partes
+		# Frames 
+		#Frame HEADER cabrillo
 		self.FrameSup = tk.Frame(self, borderwidth=2)
-		self.FrameSup.grid(row=0, column=0, sticky="nsew")
-
+		self.FrameSup.grid(row=0, column=0, sticky="nsew")	
+		
+		#Frame tabla tipo excel , QSO adif->cabrillo
 		self.FrameMed = tk.Frame(self, borderwidth=2)
 		self.FrameMed.grid(row=1, column=0, sticky="nsew")
 
+		#Frame botones inferiores, cargar adif, escribir cabrillo, ocultar
 		self.FrameButtons = tk.Frame(self, borderwidth=2)
 		self.FrameButtons.grid(row=2, column=0, sticky="ew")
 
@@ -327,6 +358,7 @@ class InterfaceGraphique(tk.Tk):
 		self.ReadFileButton = tk.Button(self.FrameButtons, text="Open ADIF", bg="red",
 										command=self.OpenFile)
 		self.ReadFileButton.grid(row=0, column=2)
+
 		
 		# Botón para exportar cabrillo
 		self.WriteButton = tk.Button(self.FrameButtons, text="Write Cabrillo", bg="green",
@@ -338,7 +370,17 @@ class InterfaceGraphique(tk.Tk):
 										command = self.mostrar_config)
 										
 		self.boton_mostrar.grid(row=0, column=4)
+				
+		#Combobox SERIAL_SEND : SERIAL_RCVD		
+		self.serial_options_var = tk.StringVar()
+		serial_options = ['RST','COMMENT','59 +SERIE','SERIE','59 + DATO','DATO']
 		
+		tk.Label(self.FrameButtons, text="SERIAL_SEND").grid(row=0, column=5, sticky="e", padx=5, pady=2)
+		ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly").grid(row=0, column=6, sticky="we", padx=5, pady=2)
+		self.serial_options_var.set(serial_options[0])		
+		
+
+		#Header cabrillo en la parte superior ocultable
 		self.headerCabrillo()		
 	
 	def variablesCabrillo(self):
@@ -393,7 +435,7 @@ class InterfaceGraphique(tk.Tk):
 		return header_cabrillo_dict
 
 	def headerCabrillo (self):	
-		""" campos graficos HEAD cabrillo"""
+		""" campos graficos HEAD cabrillo Frame superior ocultable"""
 		# Opciones categorias
 		operator_options = ['SINGLE-OP', 'MULTI-OP', 'CHECKLOG']
 		assisted_options = ['ASSISTED', 'NON-ASSISTED']
@@ -478,7 +520,7 @@ class InterfaceGraphique(tk.Tk):
 		
 		self.columnconfigure(1, weight=1)
 		addr_frame.columnconfigure(1, weight=1)		
-		
+	
 	def WriteFile(self):
 		#Enviar datos del header CABRILLO para pasar a clase AdifCabrillo
 		header_cabrillo_dict = self.creaDiccionarioHeader () 
@@ -524,13 +566,14 @@ class InterfaceGraphique(tk.Tk):
 		#lista con datos del QSO desde el Adif cargado	
 		datos_tabla = self.adif_cabrillo.carga_adif() 
 		
-		#Recupera el indicativo desde el Adif 
-		#self.station_callsign = self.adif_cabrillo.get_callsign()		
+		#Crea Excel con estos datos ,  en el programa instancia HojaExcelApp
+		self.hoja_qso.cargar_datos(datos_tabla)		
 		
-		#Crea Excel con estos datos ,  en el programa
-		self.hoja_qso.cargar_datos(datos_tabla)
-
-
+		#Recupera el indicativo desde el Adif 
+		self.station_callsign = self.adif_cabrillo.get_callsign()			
+		#Afecta callsign en header	
+		self.callsign_var.set(self.station_callsign)
+		
 if __name__ == "__main__":
     print("soft version ", VERSION_SOFT)
     app = InterfaceGraphique()
