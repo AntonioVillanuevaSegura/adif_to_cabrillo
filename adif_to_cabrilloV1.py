@@ -224,23 +224,16 @@ class AdifCabrillo:
 		)
 		
 	def tabla_to_cabrillo(self):
+		""" crea cabrillo desde los datos graficos de la tabla"""
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-		#lista= self.hoja_excel_app.hoja_qso.leer_tabla () #Lista de tuplas
 		lista= self.hoja_excel_app.leer_tabla () #Lista de tuplas
-		
-		#Configura el Header
-		#self.set_header() #configura el HEADER
 		
 		res=self.header.lee_diccionario()#Lee HEADER cabrillo
 		
 		for qso in lista:#Lineas QSOs
-			#print(qso) # tupla QSO
+			#print(qso) # tupla QSO debug
 			res +=self.formatear_qso_tuple(qso)
-			"""
-			res +="QSO: "
-			for data in qso: #recorre las tuplas, los QSOs
-				res += data + "\t"
-			"""
+
 			res +='\n'
 		
 		return res
@@ -279,11 +272,10 @@ class AdifCabrillo:
 				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
 				# Añadimos columnas a la hoja excel
 				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
-				#line = self.adif_to_cabrillo_line(adif)
-				#print(line)
-
-		# Cargamos nuevos datos en la tabla
-		#self.hoja_qso.cargar_datos(datos_tabla)	
+		
+		# Ordena datos_tabla por QSO_DATE y TIME_ON 
+		datos_tabla.sort(key=lambda x: (x[2], x[3]))
+			
 		return datos_tabla #devuelve una lista para cargar en la hoja excel
 
 			
