@@ -60,7 +60,7 @@ class HojaExcelApp:
 
 	def crear_hoja_excel(self,mode=0):
 		columns = ("FREQ_RX", "MODE", "QSO_DATE", "TIME_ON",
-				   "STATION_CALLSIGN", "SERIAL_SEND", "CALL", "SERIAL_RCVD")
+				   "STATION_CALLSIGN", "SERIAL_SEND", "CALL", "SERIAL_RCVD","COMMENT")
 		if mode == 1:
 			# Creamos la lista solo con las claves antes de ":"
 			columns =("CONTEST","C.OPERATOR","C.BAND","C.POWER","C.MODE","LOCATOR","SCORE","NAME")
@@ -164,7 +164,18 @@ class HojaExcelApp:
 		items = self.tree.get_children()
 		if items:
 			primer_item = items[linea]
-			self.tree.set(primer_item, col, value)		
+			self.tree.set(primer_item, col, value)
+				
+	def modifica_con_comentario(self):
+		"""Recupera la primera parte del comentario para SERIAL_SEND"""
+		items = self.tree.get_children()  # Obtener todos los ítems (filas)
+		for linea in range(self.numero_filas()):
+			item_id = items[linea]  # ID del ítem en esa fila
+			# Obtener el valor de la columna 'comment' para este ítem
+			comment_valor = self.tree.set(item_id, "COMMENT")
+			print(f"Fila {linea} - COMMENT: {comment_valor}") #Debug
+			# Aquí haces lo que necesites con comment_valor
+			self.modifica_columna(linea, "SERIAL_SEND", comment_valor)
 		
 class Header:
 	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
@@ -211,28 +222,16 @@ class AdifCabrillo:
 			return match.group(2).strip() if match else ""
 		return {# <RST_SENT:2>59 <RST_RCVD:2>59
 			"CALL": get_field("CALL"),
-			#"QSO_DATE": get_field("QSO_DATE"),
 			"QSO_DATE": f"{get_field('QSO_DATE')[:4]}-{get_field('QSO_DATE')[4:6]}-{get_field('QSO_DATE')[6:8]}",
 			"TIME_ON": get_field("TIME_ON")[:4],
-			#"FREQ": (get_field("FREQ") or "").replace('.', ''),
 			"FREQ": (get_field("FREQ") or "").replace('.', '').ljust(4, '0'),
 			"MODE": get_field("MODE"),
 			"STATION_CALLSIGN": get_field("STATION_CALLSIGN"),
 			"RST_SENT": get_field("RST_SENT"),
-			"RST_RCVD": get_field("RST_RCVD"),            
+			"RST_RCVD": get_field("RST_RCVD"),  
+			"COMMENT": get_field("COMMENT"),            
 		}
-	"""
-	def adif_to_cabrillo_line(self, adif):
-		# Crea linea cabrillo
-		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-     
-		freq = adif["FREQ"].replace('.', '')
-		modo = "PH" if adif["MODE"].upper() in ["SSB", "PH"] else adif["MODE"].upper()
-		fecha = f"{adif['QSO_DATE'][:4]}-{adif['QSO_DATE'][4:6]}-{adif['QSO_DATE'][6:8]}"
-		#hora = adif['TIME_ON'][:2] + adif['TIME_ON'][2:4]
-		hora = adif['TIME_ON'][:6]
-		return f"QSO: {freq:5} {modo:2} {fecha}  {hora} {adif['STATION_CALLSIGN']:12}   {adif ['RST_SENT']:4}     {adif['CALL']:12} {adif ['RST_RCVD']:4}"
-	"""
+
 	def formatear_qso_tuple(self,qso_tuple):
 		""" formatea espacios segun norma cabrillo"""
 		freq, mode, date, time, call1, data1, call2, data2 = qso_tuple
@@ -288,14 +287,21 @@ class AdifCabrillo:
 
 	def carga_adif(self):
 		adif_records_raw = self.adif_data.split("<EOR>")
+		
+		print (adif_records_raw) 
 		datos_tabla = [] #Crea una lista 
 
-		for record in adif_records_raw:
+		for record in adif_records_raw:#Recorre lineas y busca <CALL
 			if "<CALL:" in record:
 				adif = self.parse_adif_record(record)
 				self.station_callsign=adif ["STATION_CALLSIGN"] #Lo utilizo en el HEADER
+				
 				# Añadimos columnas a la hoja excel
-				datos_tabla.append([adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"]])
+				if "COMMENT" in record:
+					datos_tabla.append([ adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"],adif["COMMENT"] ])
+				else:
+					datos_tabla.append([ adif["FREQ"], adif["MODE"],adif["QSO_DATE"], adif["TIME_ON"],adif ["STATION_CALLSIGN"],adif ["RST_SENT"],adif["CALL"],adif["RST_RCVD"] ])
+				
 				
 		#elimina duplicados
 		datos_tabla_sin_duplicados = list(map(list, set(map(tuple, datos_tabla))))
@@ -304,8 +310,6 @@ class AdifCabrillo:
 		# Ordena datos_tabla por QSO_DATE y TIME_ON 
 		datos_tabla.sort(key=lambda x: (x[2], x[3]))
 		
-
-			
 		return datos_tabla #devuelve una lista para cargar en la hoja excel
 
 	def get_callsign (self):
@@ -372,7 +376,7 @@ class InterfaceGraphique(tk.Tk):
 				
 		#Combobox SERIAL_SEND : SERIAL_RCVD		
 		self.serial_options_var = tk.StringVar()
-		serial_options = ['59+SERIE','SERIE','59 + DATO','DATO']
+		serial_options = ['59+SERIE','SERIE','59 + DATO','DATO','COMMENT']
 		
 		tk.Label(self.FrameButtons, text="SERIAL_SEND").grid(row=0, column=5, sticky="e", padx=5, pady=2)
 		#self.combobox =ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly").grid(row=0, column=6, sticky="we", padx=5, pady=2)
@@ -386,8 +390,6 @@ class InterfaceGraphique(tk.Tk):
 		tk.Label(self.FrameButtons, text="DATO ").grid(row=0, column=8, sticky="e", padx=5, pady=2)
 		tk.Entry(self.FrameButtons, textvariable=self.data_serial_var).grid(row=0, column=9, sticky="we", padx=5, pady=2)	
 		
-					
-
 		#Header cabrillo en la parte superior ocultable
 		self.headerCabrillo()		
 
@@ -400,9 +402,12 @@ class InterfaceGraphique(tk.Tk):
 		elif selected_value =='SERIE': #Escribe solo numero de serie 
 			self.hoja_qso.modifica_columnas_serial("")
 		elif selected_value =='DATO': #Escribe solo un dato 
-			self.hoja_qso.modifica_columnas_modelo(self.data_serial_var.get())			
+			self.hoja_qso.modifica_columnas_modelo(self.data_serial_var.get())	
+		elif selected_value =='59 + DATO': #Escribe solo un dato 
+			self.hoja_qso.modifica_columnas_modelo("59 "+self.data_serial_var.get())	
+		elif selected_value =='COMMENT': #Recupera 1a parte comentario self.datos_tabla
+			self.hoja_qso.modifica_con_comentario()								
 			
-	
 	def variablesCabrillo(self):
 		""" variables tk utilizadas en el HEAD cabrillo"""
 		#Variables HEAD cabrillo
@@ -584,10 +589,14 @@ class InterfaceGraphique(tk.Tk):
 		self.adif_cabrillo =AdifCabrillo(adif_data,self.hoja_qso)	
 			
 		#lista con datos del QSO desde el Adif cargado	
-		datos_tabla = self.adif_cabrillo.carga_adif() 
+		self.datos_tabla = self.adif_cabrillo.carga_adif() 
 		
 		#Crea Excel con estos datos ,  en el programa instancia HojaExcelApp
-		self.hoja_qso.cargar_datos(datos_tabla)		
+		self.hoja_qso.cargar_datos(self.datos_tabla)	
+		
+		#Debug QSO 
+		for sublista in self.datos_tabla:
+			print(sublista)
 		
 		#Recupera el indicativo desde el Adif 
 		self.station_callsign = self.adif_cabrillo.get_callsign()			
