@@ -129,7 +129,7 @@ class HojaExcelApp:
 		for row in nuevos_datos:
 			self.tree.insert("", "end", values=row)	
 		#self.modifica_columnas_serial() #TEST
-			
+					
 	def leer_tabla (self):
 		"""Recorre todas las filas de la tabla y devuelve una lista con sus valores"""
 		datos = []
@@ -166,7 +166,6 @@ class HojaExcelApp:
 			primer_item = items[linea]
 			self.tree.set(primer_item, col, value)		
 		
-	
 class Header:
 	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
 	def __init__(self):
@@ -373,15 +372,36 @@ class InterfaceGraphique(tk.Tk):
 				
 		#Combobox SERIAL_SEND : SERIAL_RCVD		
 		self.serial_options_var = tk.StringVar()
-		serial_options = ['RST','COMMENT','59 +SERIE','SERIE','59 + DATO','DATO']
+		serial_options = ['59+SERIE','SERIE','59 + DATO','DATO']
 		
 		tk.Label(self.FrameButtons, text="SERIAL_SEND").grid(row=0, column=5, sticky="e", padx=5, pady=2)
-		ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly").grid(row=0, column=6, sticky="we", padx=5, pady=2)
-		self.serial_options_var.set(serial_options[0])		
+		#self.combobox =ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly").grid(row=0, column=6, sticky="we", padx=5, pady=2)
 		
+		self.combobox = ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly")
+		self.combobox.grid(row=0, column=6, sticky="we", padx=5, pady=2)
+		self.serial_options_var.set(serial_options[0])
+		self.combobox.bind("<<ComboboxSelected>>", self.on_combobox_change)
+		
+		self.data_serial_var = tk.StringVar()
+		tk.Label(self.FrameButtons, text="DATO ").grid(row=0, column=8, sticky="e", padx=5, pady=2)
+		tk.Entry(self.FrameButtons, textvariable=self.data_serial_var).grid(row=0, column=9, sticky="we", padx=5, pady=2)	
+		
+					
 
 		#Header cabrillo en la parte superior ocultable
 		self.headerCabrillo()		
+
+	def on_combobox_change(self,event):
+		""" Gestion Combobox SERIAL_SEND SERIAL_RCVD """
+		selected_value = self.combobox.get()
+		if selected_value =='59+SERIE': #Escribe 59 + numero serie
+			print ("59+SERIE")
+			self.hoja_qso.modifica_columnas_serial("59")
+		elif selected_value =='SERIE': #Escribe solo numero de serie 
+			self.hoja_qso.modifica_columnas_serial("")
+		elif selected_value =='DATO': #Escribe solo un dato 
+			self.hoja_qso.modifica_columnas_modelo(self.data_serial_var.get())			
+			
 	
 	def variablesCabrillo(self):
 		""" variables tk utilizadas en el HEAD cabrillo"""
