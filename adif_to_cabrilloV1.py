@@ -1,16 +1,21 @@
+"""
+F4LEC Antonio Villanueva
+Conversor Adif a Cabrillo , para los concursos 
+Recupera el Adif creado con Klog y lo convierte en Cabrillo
+
+Se pueden modificar las celdas manualmente o utilizar algun
+automatismo del combobox .... Cada concurso es diferente
+antes de enviar confirmar que todo este bien 
+
+59+SERIE introduce 59 + un numero incremental 
+SERIE Solo introduce un incremental en SERIAL_SEND
+59+DATO Introduce 59 + el dato que recupera en la entrada 
+DATO Solo recupera el dato en la entrada 
+COMMENT recupera de los comentarios el primer campo para SERIAL_SEND
+y SERIAL_RCVD , pueden estar separados por espacio , - o /
+
+"""
 #https://cqww.com/cabrillo.htm
-"""
-                              --------info sent------- -------info rcvd--------
-QSO: freq  mo date       time call          rst exch   call          rst exch   t
-QSO: ***** ** yyyy-mm-dd nnnn ************* nnn ****** ************* nnn ****** n
-QSO:  3799 PH 2000-11-26 0711 N6TW          59  03     JT1Z          59  23     0
-000000000111111111122222222223333333333444444444455555555556666666666777777777788
-123456789012345678901234567890123456789012345678901234567890123456789012345678901
-CW (morse)
-PH (phone, voz)
-RY (radioteletipo, RTTY)
-FM, AM, SSB, etc.
-"""
 
 import tkinter as tk #Gui
 from tkinter import ttk
@@ -173,10 +178,35 @@ class HojaExcelApp:
 			item_id = items[linea]  # ID del ítem en esa fila
 			# Obtener el valor de la columna 'comment' para este ítem
 			comment_valor = self.tree.set(item_id, "COMMENT")
-			print(f"Fila {linea} - COMMENT: {comment_valor}") #Debug
-			# Aquí haces lo que necesites con comment_valor
-			self.modifica_columna(linea, "SERIAL_SEND", comment_valor)
-		
+			
+			first_value=""
+			second_value=""
+			
+			if '-' in comment_valor:
+				first_value = comment_valor.split('-', 1)[0]     # primer campo antes de separador
+				if len(comment_valor)>1:
+					second_value = comment_valor.split('-', 1)[1]     #2° campo despues separador
+			elif ',' in comment_valor:	
+				first_value = comment_valor.split(',', 1)[0]     # primer campo antes de separador
+				if len(comment_valor)>1:				
+					second_value = comment_valor.split(',', 1)[1]     #2° campo despues separador	
+			elif '/' in comment_valor:	
+				first_value = comment_valor.split('/', 1)[0]      # primer campo antes de separador
+				if len(comment_valor)>1:				
+					second_value = comment_valor.split('/', 1)[1]     #2° campo despues separador					
+			elif ' ' in comment_valor:			
+				first_value = comment_valor.split(' ', 1)[0]		# primer campo antes de separador
+				if len(comment_valor)>1:				
+						second_value = comment_valor.split(' ', 1)[1]     #2° campo despues separador					
+					
+			#print(f"Fila {linea} - COMMENT: {comment_valor}") #Debug
+			
+			self.modifica_columna(linea, "SERIAL_SEND", first_value)
+			
+			if second_value:
+				self.modifica_columna(linea, "SERIAL_RCVD", second_value)
+			else:
+				self.modifica_columna(linea, "SERIAL_RCVD", "") #Vacio
 class Header:
 	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
 	def __init__(self):
@@ -233,8 +263,9 @@ class AdifCabrillo:
 		}
 
 	def formatear_qso_tuple(self,qso_tuple):
+
 		""" formatea espacios segun norma cabrillo"""
-		freq, mode, date, time, call1, data1, call2, data2 = qso_tuple
+		freq, mode, date, time, call1, data1, call2, data2,*rest = qso_tuple
 		return (
 			f"QSO: {freq:>5} "
 			f"{mode:<3} "
@@ -256,9 +287,7 @@ class AdifCabrillo:
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO debug
 			res +=self.formatear_qso_tuple(qso)
-
 			res +='\n'
-		
 		return res
 		
 	def set_header(self,header_dict):
@@ -331,9 +360,6 @@ class InterfaceGraphique(tk.Tk):
 		#instancia clase header Header
 		self.cabecera= Header() 
 		
-		# Crear la hoja excel en FrameSup HEADER CABRILLO
-		#self.hoja_header = HojaExcelApp(self.FrameSup, "",1)		
-
 		# Crear la hoja excel en FrameMed QSOs
 		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)		
 		
@@ -607,51 +633,3 @@ if __name__ == "__main__":
     print("soft version ", VERSION_SOFT)
     app = InterfaceGraphique()
     app.mainloop()
-
-"""
-CABRILLO EXAMPLE 
-
-START-OF-LOG: 3.0
-CONTEST: 
-CALLSIGN: 
-LOCATION: 
-CATEGORY-OPERATOR: 
-CATEGORY-ASSISTED: 
-CATEGORY-BAND: 
-CATEGORY-POWER: 
-CATEGORY-MODE: 
-CATEGORY-TRANSMITTER: 
-CATEGORY-OVERLAY: 
-GRID-LOCATOR: 
-CLAIMED-SCORE: 
-CLUB: 
-CREATED-BY: 
-NAME: 
-ADDRESS: 
-ADDRESS-CITY: 
-ADDRESS-STATE-PROVINCE: 
-ADDRESS-POSTALCODE: 
-ADDRESS-COUNTRY:
-OPERATORS: 
-SOAPBOX: .
-
-QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
-QSO: 14242 PH 2025-08-09  0801 F4LEC          59  05     HA2YL         59  05     0
-QSO: 14227 PH 2025-08-09  0805 F4LEC          59  05     IU7QCK        59  05     0
-END-OF-LOG:
-
---------------------------------------------------------------------------------------
-ADIF EXAMPLE
-
-ADIF v3.1.0 Export from KLog
-https://www.klog.xyz/klog
-<PROGRAMVERSION:3>2.3
-<PROGRAMID:4>KLOG 
-<APP_KLOG_QSOS:2>19
-<APP_KLOG_LOG_DATE_EXPORT:13>20250812-1012
-<EOH>
-<CALL:5>IQ4FE <QSO_DATE:8>20250809 <TIME_ON:6>075200 <FREQ:5>7.148 <BAND:3>40M <FREQ_RX:5>7.148 <BAND_RX:3>40M <MODE:3>SSB <MY_GRIDSQUARE:8>JN33JU07 <STATION_CALLSIGN:5>F4LEC <CQZ:2>15 <ITUZ:2>28 <DXCC:3>248 <CONT:2>EU <CONTACTED_OP:0> <EQ_CALL:0> <EQSL_QSLSDATE:8>20250809 <EQSL_QSL_SENT:1>Q <LOTW_QSLSDATE:8>20250809 <LOTW_QSL_SENT:1>Q <CLUBLOG_QSO_UPLOAD_DATE:8>20250809 <CLUBLOG_QSO_UPLOAD_STATUS:1>M <OPERATOR:0> <OWNER_CALLSIGN:0> <RST_SENT:2>59 <RST_RCVD:2>59 <TX_PWR:2>50 <EOR>
-<CALL:5>HA2YL <QSO_DATE:8>20250809 <TIME_ON:6>080100 <FREQ:6>14.242 <BAND:3>20M <FREQ_RX:6>14.242 <BAND_RX:3>20M <MODE:3>SSB <MY_GRIDSQUARE:8>JN33JU07 <STATION_CALLSIGN:5>F4LEC <CQZ:2>15 <ITUZ:2>28 <DXCC:3>239 <CONT:2>EU <CONTACTED_OP:0> <EQ_CALL:0> <EQSL_QSLSDATE:8>20250809 <EQSL_QSL_SENT:1>Q <LOTW_QSLSDATE:8>20250809 <LOTW_QSL_SENT:1>Q <CLUBLOG_QSO_UPLOAD_DATE:8>20250809 <CLUBLOG_QSO_UPLOAD_STATUS:1>M <OPERATOR:0> <OWNER_CALLSIGN:0> <RST_SENT:2>59 <RST_RCVD:2>59 <TX_PWR:2>50 <EOR>
-<CALL:6>IU7QCK <QSO_DATE:8>20250809 <TIME_ON:6>080500 <FREQ:6>14.227 <BAND:3>20M <FREQ_RX:6>14.227 <BAND_RX:3>20M <MODE:3>SSB <MY_GRIDSQUARE:8>JN33JU07 <STATION_CALLSIGN:5>F4LEC <CQZ:2>15 <ITUZ:2>28 <DXCC:3>248 <CONT:2>EU <CONTACTED_OP:0> <EQ_CALL:0> <EQSL_QSLSDATE:8>20250809 <EQSL_QSL_SENT:1>Q <LOTW_QSLSDATE:8>20250809 <LOTW_QSL_SENT:1>Q <CLUBLOG_QSO_UPLOAD_DATE:8>20250809 <CLUBLOG_QSO_UPLOAD_STATUS:1>M <OPERATOR:0> <OWNER_CALLSIGN:0> <RST_SENT:2>59 <RST_RCVD:2>59 <TX_PWR:2>50 <EOR>
-
-"""
