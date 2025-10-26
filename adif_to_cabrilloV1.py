@@ -207,6 +207,44 @@ class HojaExcelApp:
 				self.modifica_columna(linea, "SERIAL_RCVD", second_value)
 			else:
 				self.modifica_columna(linea, "SERIAL_RCVD", "") #Vacio
+				
+	def modifica_con_comentario59(self):
+		"""Recupera la primera parte del comentario para SERIAL_SEND"""
+		items = self.tree.get_children()  # Obtener todos los ítems (filas)
+		for linea in range(self.numero_filas()):
+			item_id = items[linea]  # ID del ítem en esa fila
+			# Obtener el valor de la columna 'comment' para este ítem
+			comment_valor = self.tree.set(item_id, "COMMENT")
+			
+			first_value=""
+			second_value=""
+			
+			if '-' in comment_valor:
+				first_value = comment_valor.split('-', 1)[0]     # primer campo antes de separador
+				if len(comment_valor)>1:
+					second_value = comment_valor.split('-', 1)[1]     #2° campo despues separador
+			elif ',' in comment_valor:	
+				first_value = comment_valor.split(',', 1)[0]     # primer campo antes de separador
+				if len(comment_valor)>1:				
+					second_value = comment_valor.split(',', 1)[1]     #2° campo despues separador	
+			elif '/' in comment_valor:	
+				first_value = comment_valor.split('/', 1)[0]      # primer campo antes de separador
+				if len(comment_valor)>1:				
+					second_value = comment_valor.split('/', 1)[1]     #2° campo despues separador					
+			elif ' ' in comment_valor:			
+				first_value = comment_valor.split(' ', 1)[0]		# primer campo antes de separador
+				if len(comment_valor)>1:				
+						second_value = comment_valor.split(' ', 1)[1]     #2° campo despues separador					
+					
+			#print(f"Fila {linea} - COMMENT: {comment_valor}") #Debug
+			
+			self.modifica_columna(linea, "SERIAL_SEND", "59 "+first_value)
+			
+			if second_value:
+				self.modifica_columna(linea, "SERIAL_RCVD","59 "+ second_value)
+			else:
+				self.modifica_columna(linea, "SERIAL_RCVD", "") #Vacio				
+				
 class Header:
 	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
 	def __init__(self):
@@ -402,7 +440,7 @@ class InterfaceGraphique(tk.Tk):
 				
 		#Combobox SERIAL_SEND : SERIAL_RCVD		
 		self.serial_options_var = tk.StringVar()
-		serial_options = ['59+SERIE','SERIE','59 + DATO','DATO','COMMENT']
+		serial_options = ['59+SERIE','SERIE','59 + DATO','DATO','COMMENT',"59+COMMENT"]
 		
 		tk.Label(self.FrameButtons, text="SERIAL_SEND").grid(row=0, column=5, sticky="e", padx=5, pady=2)
 		#self.combobox =ttk.Combobox(self.FrameButtons, textvariable=self.serial_options_var, values=serial_options, state="readonly").grid(row=0, column=6, sticky="we", padx=5, pady=2)
@@ -432,7 +470,9 @@ class InterfaceGraphique(tk.Tk):
 		elif selected_value =='59 + DATO': #Escribe solo un dato 
 			self.hoja_qso.modifica_columnas_modelo("59 "+self.data_serial_var.get())	
 		elif selected_value =='COMMENT': #Recupera 1a parte comentario self.datos_tabla
-			self.hoja_qso.modifica_con_comentario()								
+			self.hoja_qso.modifica_con_comentario()		
+		elif selected_value =='59+COMMENT': #Recupera 1a parte comentario self.datos_tabla
+			self.hoja_qso.modifica_con_comentario59()										
 			
 	def variablesCabrillo(self):
 		""" variables tk utilizadas en el HEAD cabrillo"""
