@@ -1,4 +1,5 @@
 """
+bug 28/10/25 error frecuencia Klog crear  14.2 o 28.43 y cabrillo produce 1420 o 2843 parse_adif_record
 F4LEC Antonio Villanueva
 Conversor Adif a Cabrillo , para los concursos 
 Recupera el Adif creado con Klog y lo convierte en Cabrillo
@@ -24,13 +25,13 @@ from tkinter import colorchooser
 
 import re
 
-VERSION_SOFT= "1"
+VERSION_SOFT= "2"
 	
 import tkinter as tk
 from tkinter import ttk, filedialog, END
 import re
 
-VERSION_SOFT = "1.0"
+VERSION_SOFT = "2.0"
 
 HEADER="""START-OF-LOG: 3.0
 CONTEST: 
@@ -209,7 +210,7 @@ class HojaExcelApp:
 				self.modifica_columna(linea, "SERIAL_RCVD", "") #Vacio
 				
 	def modifica_con_comentario59(self):
-		"""Recupera la primera parte del comentario para SERIAL_SEND"""
+		"""Recupera la primera parte del comentario para SERIAL_SEND y anade 59 delante"""
 		items = self.tree.get_children()  # Obtener todos los ítems (filas)
 		for linea in range(self.numero_filas()):
 			item_id = items[linea]  # ID del ítem en esa fila
@@ -292,7 +293,9 @@ class AdifCabrillo:
 			"CALL": get_field("CALL"),
 			"QSO_DATE": f"{get_field('QSO_DATE')[:4]}-{get_field('QSO_DATE')[4:6]}-{get_field('QSO_DATE')[6:8]}",
 			"TIME_ON": get_field("TIME_ON")[:4],
-			"FREQ": (get_field("FREQ") or "").replace('.', '').ljust(4, '0'),
+			#"FREQ": (get_field("FREQ") or "").replace('.', '').ljust(4, '0'),
+			"FREQ": (lambda f: (f.replace('.', '').ljust(4 if f.split('.')[0] and len(f.split('.')[0]) == 1 else 5, '0')) if '.' in f else f)(
+			get_field("FREQ") or ""),
 			"MODE": get_field("MODE"),
 			"STATION_CALLSIGN": get_field("STATION_CALLSIGN"),
 			"RST_SENT": get_field("RST_SENT"),
