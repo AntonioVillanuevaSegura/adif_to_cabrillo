@@ -332,8 +332,8 @@ class AdifCabrillo:
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO debug
 			res +=self.formatear_qso_tuple(qso)
-			res +='\n'
-			res+="END-OF-LOG:"			
+			res +='\n'	
+		res+="END-OF-LOG:"
 		return res
 		
 	def set_header(self,header_dict):
