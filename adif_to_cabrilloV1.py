@@ -19,20 +19,14 @@ y SERIAL_RCVD , pueden estar separados por espacio , - o /
 #https://cqww.com/cabrillo.htm
 
 import tkinter as tk #Gui
-from tkinter import ttk
+from tkinter import ttk, filedialog, END
 from tkinter import filedialog
 from tkinter import colorchooser
 
 import re
 
-VERSION_SOFT= "2"
+VERSION_SOFT= "2.0"
 	
-import tkinter as tk
-from tkinter import ttk, filedialog, END
-import re
-
-VERSION_SOFT = "2.0"
-
 HEADER="""START-OF-LOG: 3.0
 CONTEST: 
 CALLSIGN: 
@@ -329,6 +323,7 @@ class AdifCabrillo:
 			#print(qso) # tupla QSO debug
 			res +=self.formatear_qso_tuple(qso)
 			res +='\n'
+			res+="END-OF-LOG:"			
 		return res
 		
 	def set_header(self,header_dict):
