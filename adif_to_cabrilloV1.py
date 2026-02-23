@@ -177,24 +177,34 @@ class HojaExcelApp:
 			first_value=""
 			second_value=""
 			
-			if '-' in comment_valor:
-				first_value = comment_valor.split('-', 1)[0]     # primer campo antes de separador
-				if len(comment_valor)>1:
-					second_value = comment_valor.split('-', 1)[1]     #2° campo despues separador
-			elif ',' in comment_valor:	
-				first_value = comment_valor.split(',', 1)[0]     # primer campo antes de separador
-				if len(comment_valor)>1:				
-					second_value = comment_valor.split(',', 1)[1]     #2° campo despues separador	
-			elif '/' in comment_valor:	
-				first_value = comment_valor.split('/', 1)[0]      # primer campo antes de separador
-				if len(comment_valor)>1:				
-					second_value = comment_valor.split('/', 1)[1]     #2° campo despues separador					
-			elif ' ' in comment_valor:			
-				first_value = comment_valor.split(' ', 1)[0]		# primer campo antes de separador
-				if len(comment_valor)>1:				
-						second_value = comment_valor.split(' ', 1)[1]     #2° campo despues separador					
-					
-			#print(f"Fila {linea} - COMMENT: {comment_valor}") #Debug
+			#Analiza posibles separadores COMMENT TIPO 5906 5983 p.e
+			separadores = ["/", "=", " ", ","]
+			
+			if (any(sep in comment_valor for sep in separadores)):
+			
+				if '-' in comment_valor:
+					first_value = comment_valor.split('-', 1)[0]     # primer campo antes de separador
+					if len(comment_valor)>1:
+						second_value = comment_valor.split('-', 1)[1]     #2° campo despues separador
+				elif ',' in comment_valor:	
+					first_value = comment_valor.split(',', 1)[0]     # primer campo antes de separador
+					if len(comment_valor)>1:				
+						second_value = comment_valor.split(',', 1)[1]     #2° campo despues separador	
+				elif '/' in comment_valor:	
+					first_value = comment_valor.split('/', 1)[0]      # primer campo antes de separador
+					if len(comment_valor)>1:				
+						second_value = comment_valor.split('/', 1)[1]     #2° campo despues separador					
+				elif ' ' in comment_valor:			
+					first_value = comment_valor.split(' ', 1)[0]		# primer campo antes de separador
+					if len(comment_valor)>1:				
+							second_value = comment_valor.split(' ', 1)[1]     #2° campo despues separador					
+			else:#Comment solo tiene 1  valor retornado por el contacto RCVD
+				first_value="59 XX" #59 +recupera DATO 
+				second_value="59 "+	comment_valor
+			
+			#Crea un espacio entre 59 y el control
+			first_value = first_value[:2] + "  " + first_value[2:]
+			second_value = second_value[:2] + "  " + second_value[2:]			
 			
 			self.modifica_columna(linea, "SERIAL_SEND", first_value)
 			
