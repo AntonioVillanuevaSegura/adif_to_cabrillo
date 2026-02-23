@@ -51,6 +51,19 @@ ADDRESS-COUNTRY:
 OPERATORS: 
 SOAPBOX:
 """
+
+HEADER_COUPE_DU_REF="""START-OF-LOG: 2.0
+REF-SECTION:
+CALLSIGN:
+CATEGORY:
+CLAIMED-SCORE:
+CONTEST:
+CREATED-BY: 
+NAME: 
+ADDRESS:
+RIG:
+"""
+
 class HojaExcelApp:
 	"""Crea las hojas excel para mostrar datos en la parte grafica """
 	def __init__(self, parent, adif_records, mode=0):
@@ -359,6 +372,21 @@ class AdifCabrillo:
 		self.header.set_value("ADDRESS-COUNTRY",header_dict ["ADDRESS-COUNTRY"] )
 		self.header.set_value("OPERATORS",header_dict ["OPERATORS"] )
 		self.header.set_value("SOAPBOX",header_dict ["SOAPBOX"] )
+		
+	def set_header_coupe_du_ref (self,header_dict):
+		""" formato COUPE DU REF """
+		""" recupera un diccionario con los valores del header CABRILLO """
+		self.header.set_value("REF-SECTION:",header_dict ["LOCATION"] )			
+		self.header.set_value("CALLSIGN",header_dict ["CALLSIGN"] )
+		self.header.set_value("LOCATION",header_dict ["LOCATION"] )
+		self.header.set_value("CATEGORY:",header_dict ["CATEGORY-OPERATOR"] )
+		self.header.set_value("CLAIMED-SCORE",header_dict ["CLAIMED-SCORE"] )
+		self.header.set_value("CONTEST","REF-SSB" )	
+		self.header.set_value("CREATED-BY","F4LEC" )
+		self.header.set_value("NAME",header_dict ["NAME"] )				
+		self.header.set_value("ADDRESS",header_dict ["ADDRESS"] ) 
+		self.header.set_value("RIG","" )				
+		
 
 	def carga_adif(self):
 		adif_records_raw = self.adif_data.split("<EOR>")
