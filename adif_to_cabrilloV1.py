@@ -1,8 +1,10 @@
 """
-bug 28/10/25 error frecuencia Klog crear  14.2 o 28.43 y cabrillo produce 1420 o 2843 parse_adif_record
 F4LEC Antonio Villanueva
 Conversor Adif a Cabrillo , para los concursos 
 Recupera el Adif creado con Klog y lo convierte en Cabrillo
+
+24/02/26 anado opcion contest COUPE DU REF , hay que escribir REF-SSB en CONTEST
+bug 28/10/25 error frecuencia Klog crear  14.2 o 28.43 y cabrillo produce 1420 o 2843 parse_adif_record
 
 Se pueden modificar las celdas manualmente o utilizar algun
 automatismo del combobox .... Cada concurso es diferente
@@ -15,6 +17,19 @@ DATO Solo recupera el dato en la entrada
 COMMENT recupera de los comentarios el primer campo para SERIAL_SEND
 y SERIAL_RCVD , pueden estar separados por espacio , - o /
 
+para COUPE du REF REF-SSB ejemplo
+
+START-OF-LOG: 2.0
+REF-SECTION: 06
+CALLSIGN: F4LEC
+CATEGORY: SINGLE-OP ALL LOW
+CLAIMED-SCORE:  33810
+CONTEST: REF-SSB
+CREATED-BY: WINREF-HF V9.7.18
+NAME: VILLANUEVA ANTONIO
+ADDRESS:  BEAUSOLEIL  FRANCE
+RIG: ICOM 7300
+
 """
 #https://cqww.com/cabrillo.htm
 
@@ -25,7 +40,7 @@ from tkinter import colorchooser
 
 import re
 
-VERSION_SOFT= "2.0"
+VERSION_SOFT= "3.0"
 	
 HEADER="""START-OF-LOG: 3.0
 CONTEST: 
@@ -52,6 +67,7 @@ OPERATORS:
 SOAPBOX:
 """
 
+#CONTEST REF-SSB COUPE Du REF
 HEADER_COUPE_DU_REF="""START-OF-LOG: 2.0
 REF-SECTION:
 CALLSIGN:
@@ -264,25 +280,39 @@ class HojaExcelApp:
 				self.modifica_columna(linea, "SERIAL_RCVD", "") #Vacio				
 				
 class Header:
-	""" Header cabrillo se utiliza en la clase AdifCabrillo"""
-	def __init__(self):
+	""" Header cabrillo crea 2 tipos de Header REF-SSB coupe du REF y normal"""
+	def __init__(self,opcion=""):
+		self.opcion =opcion		
 		self.crea_diccionario()
 		
 	def crea_diccionario(self):
 		""" Inicializa el direccionario con keys HEADER cabrillo"""
 		self.header_dict = {}
-
-		for linea in HEADER.strip().splitlines():
-			if ":" in linea:  # aseguramos que la línea tiene separador
-				clave, valor = linea.split(":", 1)  # split solo en el primer ':'
-				self.header_dict[clave.strip()] = valor.strip()	
-					
+		
+		if self.opcion!="REF-SSB":
+			print ("NORMAL en crea diccionario");
+			for linea in HEADER.strip().splitlines():
+				if ":" in linea:  # aseguramos que la línea tiene separador
+					clave, valor = linea.split(":", 1)  # split solo en el primer ':'
+					self.header_dict[clave.strip()] = valor.strip()	
+		else:#REF-SSB
+			print ("REF-SSB en crea diccionario");
+			for linea in HEADER_COUPE_DU_REF.strip().splitlines():
+				if ":" in linea:  # aseguramos que la línea tiene separador
+					clave, valor = linea.split(":", 1)  # split solo en el primer ':'
+					self.header_dict[clave.strip()] = valor.strip()			
+						
 	def lee_diccionario(self):
-		""" Lee el diccionario key , value"""
+		""" Lee el diccionario key , value string """
 		res=""
 		for key,value in self.header_dict.items():
 			res += key +': '+value+'\n'
 		return res
+		
+	def get_diccionario(self):
+		""" retorna el diccionario """
+		return self.header_dict;
+		
 			
 	def set_value(self,key,value):
 		""" set key with value in dict"""
@@ -291,7 +321,7 @@ class Header:
 class AdifCabrillo:
 	""" clase para gestion Adif y Cabrillo"""
 	def __init__(self,adif_data,hoja_excel_app):
-		self.header=Header()
+		#self.header=Header()
 		self.adif_data=adif_data
 		self.hoja_excel_app=hoja_excel_app #instancia HojaExcelApp
 		
@@ -340,58 +370,22 @@ class AdifCabrillo:
 		#QSO:  7148 PH 2025-08-09  0752 F4LEC          59  05     IQ4FE         59  05     0
 		lista= self.hoja_excel_app.leer_tabla () #Lista de tuplas
 		
-		res=self.header.lee_diccionario()#Lee HEADER cabrillo
+		#print ("Tabla to cabrillo")
+		#self.header.crea_diccionario()
+		#res=self.header.lee_diccionario()#Lee HEADER cabrillo
 		
+		res=""
 		for qso in lista:#Lineas QSOs
 			#print(qso) # tupla QSO debug
 			res +=self.formatear_qso_tuple(qso)
 			res +='\n'	
 		res+="END-OF-LOG:"
 		return res
-		
-	def set_header(self,header_dict):
-		""" recupera un diccionario con los valores del header CABRILLO """
-		self.header.set_value("CONTEST",header_dict ["CONTEST"] )		
-		self.header.set_value("CALLSIGN",header_dict ["CALLSIGN"] )
-		self.header.set_value("LOCATION",header_dict ["LOCATION"] )
-		self.header.set_value("CATEGORY-OPERATOR",header_dict ["CATEGORY-OPERATOR"] )
-		self.header.set_value("CATEGORY-ASSISTED",header_dict ["CATEGORY-ASSISTED"] )
-		self.header.set_value("CATEGORY-BAND",header_dict ["CATEGORY-BAND"] )	
-		self.header.set_value("CATEGORY-POWER",header_dict ["CATEGORY-POWER"] )
-		self.header.set_value("CATEGORY-MODE",header_dict ["CATEGORY-MODE"] )
-		self.header.set_value("CATEGORY-TRANSMITTER",header_dict ["CATEGORY-TRANSMITTER"] )
-		self.header.set_value("CATEGORY-OVERLAY",header_dict ["CATEGORY-OVERLAY"] )	
-		self.header.set_value("GRID-LOCATOR",header_dict ["GRID-LOCATOR"] )
-		self.header.set_value("CLAIMED-SCORE",header_dict ["CLAIMED-SCORE"] )
-		self.header.set_value("CLUB",header_dict ["CLUB"] )
-		self.header.set_value("NAME",header_dict ["NAME"] )	
-		self.header.set_value("ADDRESS",header_dict ["ADDRESS"] )
-		self.header.set_value("ADDRESS-CITY",header_dict ["ADDRESS-CITY"] )
-		self.header.set_value("ADDRESS-STATE-PROVINCE",header_dict ["ADDRESS-STATE-PROVINCE"] )
-		self.header.set_value("ADDRESS-POSTALCODE",header_dict ["ADDRESS-POSTALCODE"] )	
-		self.header.set_value("ADDRESS-COUNTRY",header_dict ["ADDRESS-COUNTRY"] )
-		self.header.set_value("OPERATORS",header_dict ["OPERATORS"] )
-		self.header.set_value("SOAPBOX",header_dict ["SOAPBOX"] )
-		
-	def set_header_coupe_du_ref (self,header_dict):
-		""" formato COUPE DU REF """
-		""" recupera un diccionario con los valores del header CABRILLO """
-		self.header.set_value("REF-SECTION:",header_dict ["LOCATION"] )			
-		self.header.set_value("CALLSIGN",header_dict ["CALLSIGN"] )
-		self.header.set_value("LOCATION",header_dict ["LOCATION"] )
-		self.header.set_value("CATEGORY:",header_dict ["CATEGORY-OPERATOR"] )
-		self.header.set_value("CLAIMED-SCORE",header_dict ["CLAIMED-SCORE"] )
-		self.header.set_value("CONTEST","REF-SSB" )	
-		self.header.set_value("CREATED-BY","F4LEC" )
-		self.header.set_value("NAME",header_dict ["NAME"] )				
-		self.header.set_value("ADDRESS",header_dict ["ADDRESS"] ) 
-		self.header.set_value("RIG","" )				
-		
 
 	def carga_adif(self):
 		adif_records_raw = self.adif_data.split("<EOR>")
 		
-		print (adif_records_raw) 
+		#print (adif_records_raw) #DEBUG
 		datos_tabla = [] #Crea una lista 
 
 		for record in adif_records_raw:#Recorre lineas y busca <CALL
@@ -430,10 +424,7 @@ class InterfaceGraphique(tk.Tk):
 		self.variablesCabrillo()
 		
 		self.creeGui()
-		
-		#instancia clase header Header
-		self.cabecera= Header() 
-		
+
 		# Crear la hoja excel en FrameMed QSOs
 		self.hoja_qso = HojaExcelApp(self.FrameMed,"",0)		
 		
@@ -462,7 +453,6 @@ class InterfaceGraphique(tk.Tk):
 										command=self.OpenFile)
 		self.ReadFileButton.grid(row=0, column=2)
 
-		
 		# Botón para exportar cabrillo
 		self.WriteButton = tk.Button(self.FrameButtons, text="Write Cabrillo", bg="green",
 										command=self.WriteFile)
@@ -506,7 +496,7 @@ class InterfaceGraphique(tk.Tk):
 		elif selected_value =='59 + DATO': #Escribe solo un dato 
 			self.hoja_qso.modifica_columnas_modelo("59 "+self.data_serial_var.get())	
 		elif selected_value =='COMMENT': #Recupera 1a parte comentario self.datos_tabla
-			self.hoja_qso.modifica_con_comentario()		
+			self.hoja_qso.modifica_con_comentario()	#puede utilizar el DATO para crear 59 06 , 59 DATO	
 		elif selected_value =='59+COMMENT': #Recupera 1a parte comentario self.datos_tabla
 			self.hoja_qso.modifica_con_comentario59()										
 			
@@ -535,31 +525,41 @@ class InterfaceGraphique(tk.Tk):
 		self.operators_var = tk.StringVar()
 		self.soapbox_var = tk.Text()	
 			
-	def creaDiccionarioHeader (self):
-		""" Crea un diccionario  para pasar a otra clase """
-		header_cabrillo_dict= dict()
-		header_cabrillo_dict['CONTEST']=self.contest_var.get()		
-		header_cabrillo_dict['CALLSIGN']=self.callsign_var.get()
-		header_cabrillo_dict['LOCATION']=self.location_var.get()
-		header_cabrillo_dict['CATEGORY-OPERATOR']=self.category_operator_var.get()
-		header_cabrillo_dict['CATEGORY-ASSISTED']=self.category_assisted_var.get()
-		header_cabrillo_dict['CATEGORY-BAND']=self.category_band_var.get()
-		header_cabrillo_dict['CATEGORY-POWER']=self.category_power_var.get()
-		header_cabrillo_dict['CATEGORY-MODE']=self.category_mode_var.get()
-		header_cabrillo_dict['CATEGORY-TRANSMITTER']=self.category_transmiter_var.get()
-		header_cabrillo_dict['CATEGORY-OVERLAY']=self.category_overlay_var.get()
-		header_cabrillo_dict['GRID-LOCATOR']=self.grid_locator_var.get()
-		header_cabrillo_dict['CLAIMED-SCORE']=self.claimed_score_var.get()
-		header_cabrillo_dict['CLUB']=self.club_var .get()
-		header_cabrillo_dict['NAME']=self.name_var.get()
-		header_cabrillo_dict['ADDRESS']=self.address_var.get()
-		header_cabrillo_dict['ADDRESS-CITY']=self.address_city_var.get()
-		header_cabrillo_dict['ADDRESS-STATE-PROVINCE']=self.address_state_var.get()
-		header_cabrillo_dict['ADDRESS-POSTALCODE']=self.address_postalcode_var.get()
-		header_cabrillo_dict['ADDRESS-COUNTRY']=self.address_country_var.get()
-		header_cabrillo_dict['OPERATORS']=self.operators_var.get()
-		header_cabrillo_dict['SOAPBOX']=self.soapbox_text.get("1.0", "end").strip() [:68]
-		return header_cabrillo_dict
+	def setDiccionarioHeader (self,header_cabrillo_dict):
+		""" Set un diccionario de tipo HEADER  """
+		if self.contest_var.get()!="REF-SSB":
+			header_cabrillo_dict['CONTEST']=self.contest_var.get()		
+			header_cabrillo_dict['CALLSIGN']=self.callsign_var.get()
+			header_cabrillo_dict['LOCATION']=self.location_var.get()
+			header_cabrillo_dict['CATEGORY-OPERATOR']=self.category_operator_var.get()
+			header_cabrillo_dict['CATEGORY-ASSISTED']=self.category_assisted_var.get()
+			header_cabrillo_dict['CATEGORY-BAND']=self.category_band_var.get()
+			header_cabrillo_dict['CATEGORY-POWER']=self.category_power_var.get()
+			header_cabrillo_dict['CATEGORY-MODE']=self.category_mode_var.get()
+			header_cabrillo_dict['CATEGORY-TRANSMITTER']=self.category_transmiter_var.get()
+			header_cabrillo_dict['CATEGORY-OVERLAY']=self.category_overlay_var.get()
+			header_cabrillo_dict['GRID-LOCATOR']=self.grid_locator_var.get()
+			header_cabrillo_dict['CLAIMED-SCORE']=self.claimed_score_var.get()
+			header_cabrillo_dict['CLUB']=self.club_var .get()
+			header_cabrillo_dict['NAME']=self.name_var.get()
+			header_cabrillo_dict['ADDRESS']=self.address_var.get()
+			header_cabrillo_dict['ADDRESS-CITY']=self.address_city_var.get()
+			header_cabrillo_dict['ADDRESS-STATE-PROVINCE']=self.address_state_var.get()
+			header_cabrillo_dict['ADDRESS-POSTALCODE']=self.address_postalcode_var.get()
+			header_cabrillo_dict['ADDRESS-COUNTRY']=self.address_country_var.get()
+			header_cabrillo_dict['OPERATORS']=self.operators_var.get()
+			header_cabrillo_dict['SOAPBOX']=self.soapbox_text.get("1.0", "end").strip() [:68]
+		else:
+			header_cabrillo_dict['REF-SECTION']=self.location_var.get()			
+			header_cabrillo_dict['CALLSIGN']=self.callsign_var.get()
+			header_cabrillo_dict['CATEGORY']=self.category_mode_var.get()
+			header_cabrillo_dict['CLAIMED-SCORE']=self.claimed_score_var.get()
+			header_cabrillo_dict['CONTEST']="REF-SSB" 
+			header_cabrillo_dict['CREATED-BY']="F4LEC"
+			header_cabrillo_dict['NAME']=self.name_var.get()			
+			header_cabrillo_dict['ADDRESS']=self.address_var.get()
+			header_cabrillo_dict['RIG']=""
+		return header_cabrillo_dict		
 
 	def headerCabrillo (self):	
 		""" campos graficos HEAD cabrillo Frame superior ocultable"""
@@ -649,12 +649,7 @@ class InterfaceGraphique(tk.Tk):
 		addr_frame.columnconfigure(1, weight=1)		
 	
 	def WriteFile(self):
-		#Enviar datos del header CABRILLO para pasar a clase AdifCabrillo
-		header_cabrillo_dict = self.creaDiccionarioHeader () 
-		
-		#Enviar datos diccionario HEADER a la instancia de clase
-		self.adif_cabrillo.set_header (header_cabrillo_dict) #
-		
+
 		# Abre la ventana para seleccionar ubicación y nombre del archivo a guardar
 		ruta_guardado = filedialog.asksaveasfilename(
 			title="Guardar archivo como",
@@ -663,8 +658,13 @@ class InterfaceGraphique(tk.Tk):
 		)
 		
 		if ruta_guardado:
-			# contendio a escribir
-			contenido= self.adif_cabrillo.tabla_to_cabrillo () #
+			#HEADERs 
+			header_cabrillo =Header(self.contest_var.get());#Instancia Clase Header apropiado
+			header_cabrillo_dict=header_cabrillo.get_diccionario() #Obtiene el diccionario
+			self.setDiccionarioHeader (header_cabrillo_dict) #Set HEADER segun interface grafica
+			contenido =header_cabrillo.lee_diccionario() #Lee el Header diccionario de forma string 
+			
+			contenido += self.adif_cabrillo.tabla_to_cabrillo () #
 			
 			# Abrir el archivo en modo escritura y guardar el contenido
 			with open(ruta_guardado, "w", encoding="utf-8") as archivo:
@@ -697,9 +697,10 @@ class InterfaceGraphique(tk.Tk):
 		self.hoja_qso.cargar_datos(self.datos_tabla)	
 		
 		#Debug QSO 
+		"""
 		for sublista in self.datos_tabla:
 			print(sublista)
-		
+		"""
 		#Recupera el indicativo desde el Adif 
 		self.station_callsign = self.adif_cabrillo.get_callsign()			
 		#Afecta callsign en header	
