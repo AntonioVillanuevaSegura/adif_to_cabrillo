@@ -195,7 +195,7 @@ class HojaExcelApp:
 			primer_item = items[linea]
 			self.tree.set(primer_item, col, value)
 				
-	def modifica_con_comentario(self):
+	def modifica_con_comentario(self,dato):
 		"""Recupera la primera parte del comentario para SERIAL_SEND"""
 		items = self.tree.get_children()  # Obtener todos los ítems (filas)
 		for linea in range(self.numero_filas()):
@@ -228,7 +228,10 @@ class HojaExcelApp:
 					if len(comment_valor)>1:				
 							second_value = comment_valor.split(' ', 1)[1]     #2° campo despues separador					
 			else:#Comment solo tiene 1  valor retornado por el contacto RCVD
-				first_value="59 XX" #59 +recupera DATO 
+				if dato.get()=="":
+					first_value="59 XX"
+				else:
+					first_value="59 "+dato.get() #59 +recupera DATO 
 				second_value="59 "+	comment_valor
 			
 			#Crea un espacio entre 59 y el control
@@ -496,7 +499,7 @@ class InterfaceGraphique(tk.Tk):
 		elif selected_value =='59 + DATO': #Escribe solo un dato 
 			self.hoja_qso.modifica_columnas_modelo("59 "+self.data_serial_var.get())	
 		elif selected_value =='COMMENT': #Recupera 1a parte comentario self.datos_tabla
-			self.hoja_qso.modifica_con_comentario()	#puede utilizar el DATO para crear 59 06 , 59 DATO	
+			self.hoja_qso.modifica_con_comentario(self.data_serial_var)	#puede utilizar el DATO para crear 59 06 , 59 DATO	
 		elif selected_value =='59+COMMENT': #Recupera 1a parte comentario self.datos_tabla
 			self.hoja_qso.modifica_con_comentario59()										
 			
